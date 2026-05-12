@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "244163226988",
+    "project_id": "ajar-app-2168b",
+    "storage_bucket": "ajar-app-2168b.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:244163226988:android:a79058e789bb77512a9749",
+        "android_client_info": {
+          "package_name": "com.example.ajarapp"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyC0nALHZJlK46nXjeDeGgGsz75LLoTAMCA"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
