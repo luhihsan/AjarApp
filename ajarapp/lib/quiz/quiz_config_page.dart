@@ -21,16 +21,22 @@ class _QuizConfigPageState extends State<QuizConfigPage> {
   final Color darkBlueText = const Color(0xFF2C6C85);
   final Color bgColor = const Color(0xFFFDFDFD);
 
+  // State Konfigurasi Soal
   double _jumlahSoal = 5;
   int _waktuMenit = 10;
   String _kesulitan = "Sedang";
 
+  // State Data Anak
   String _kelasAnak = "";
   String _semesterAnak = "";
-  bool _isLoadingData = true; 
+  bool _isLoadingData = true;
 
-  String _agamaPilihan = "Islam"; 
+  // State Agama
+  String _agamaPilihan = "Islam";
   final List<String> _listAgama = ["Islam", "Kristen", "Katolik", "Hindu", "Buddha"];
+
+  // TAMBAHAN: State Format Kuis (MCQ / Esai)
+  String _jenisSoal = "Pilihan Ganda";
 
   @override
   void initState() {
@@ -40,7 +46,18 @@ class _QuizConfigPageState extends State<QuizConfigPage> {
 
   Future<void> _fetchChildData() async {
     try {
-      String uidOrtu = FirebaseAuth.instance.currentUser!.uid;
+      User? currentUser = FirebaseAuth.instance.currentUser;
+      if (currentUser == null) {
+        setState(() {
+          _kelasAnak = "Umum";
+          _semesterAnak = "Umum";
+          _isLoadingData = false;
+        });
+        return;
+      }
+
+      String uidOrtu = currentUser.uid;
+      
       var childDocs = await FirebaseFirestore.instance
           .collection('users')
           .doc(uidOrtu)
@@ -51,8 +68,8 @@ class _QuizConfigPageState extends State<QuizConfigPage> {
       if (childDocs.docs.isNotEmpty) {
         var data = childDocs.docs.first.data();
         setState(() {
-          _kelasAnak = data['kelas'] ?? "Umum";
-          _semesterAnak = data['semester'] ?? "Umum";
+          _kelasAnak = data['kelas']?.toString() ?? "Umum";
+          _semesterAnak = data['semester']?.toString() ?? "Umum";
           _isLoadingData = false;
         });
       } else {
@@ -93,6 +110,7 @@ class _QuizConfigPageState extends State<QuizConfigPage> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            // Header Info Anak
             Container(
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
@@ -118,6 +136,7 @@ class _QuizConfigPageState extends State<QuizConfigPage> {
             ),
             const SizedBox(height: 32),
 
+            // Dropdown Agama Khusus Mapel Agama
             if (widget.mapel == "Pendidikan Agama dan Budi Pekerti") ...[
               Text("Agama Siswa", style: GoogleFonts.nunito(fontSize: 18, fontWeight: FontWeight.bold, color: darkBlueText)),
               const SizedBox(height: 8),
@@ -146,6 +165,20 @@ class _QuizConfigPageState extends State<QuizConfigPage> {
               ),
               const SizedBox(height: 24),
             ],
+
+            // TAMBAHAN: Pilihan Format Kuis (MCQ / Esai / Campuran)
+            Text("Format Kuis", style: GoogleFonts.nunito(fontSize: 18, fontWeight: FontWeight.bold, color: darkBlueText)),
+            const SizedBox(height: 12),
+            Row(
+              children: [
+                _buildFormatChip("Pilihan Ganda", primaryBlue),
+                const SizedBox(width: 8),
+                _buildFormatChip("Esai", Colors.purple.shade400),
+                const SizedBox(width: 8),
+                _buildFormatChip("Campuran", accentOrange),
+              ],
+            ),
+            const SizedBox(height: 24),
 
             // 1. Slider Jumlah Soal
             Text("Jumlah Soal: ${_jumlahSoal.toInt()}", style: GoogleFonts.nunito(fontSize: 18, fontWeight: FontWeight.bold, color: darkBlueText)),
@@ -205,13 +238,13 @@ class _QuizConfigPageState extends State<QuizConfigPage> {
             // Tombol Generate
             ElevatedButton(
               onPressed: () async {
-               showDialog(
+                showDialog(
                   context: context,
                   barrierDismissible: false,
                   builder: (context) => AlertDialog(
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
                     content: Column(
-                      mainAxisSize: MainAxisSize.min, // Agar dialog menyesuaikan tinggi konten
+                      mainAxisSize: MainAxisSize.min,
                       children: [
                         const SizedBox(height: 10),
                         CircularProgressIndicator(color: primaryBlue),
@@ -219,21 +252,13 @@ class _QuizConfigPageState extends State<QuizConfigPage> {
                         Text(
                           "Sedang menyiapkan soal kuis...",
                           textAlign: TextAlign.center,
-                          style: GoogleFonts.nunito(
-                            fontWeight: FontWeight.bold,
-                            color: darkBlueText,
-                            fontSize: 18,
-                          ),
+                          style: GoogleFonts.nunito(fontWeight: FontWeight.bold, color: darkBlueText, fontSize: 18),
                         ),
                         const SizedBox(height: 8),
                         Text(
                           "AI kami sedang meracik soal terbaik untukmu. Tunggu sebentar ya!",
                           textAlign: TextAlign.center,
-                          style: GoogleFonts.quicksand(
-                            fontSize: 14,
-                            color: Colors.grey.shade600,
-                            fontWeight: FontWeight.w600,
-                          ),
+                          style: GoogleFonts.quicksand(fontSize: 14, color: Colors.grey.shade600, fontWeight: FontWeight.w600),
                         ),
                         const SizedBox(height: 10),
                       ],
@@ -242,14 +267,14 @@ class _QuizConfigPageState extends State<QuizConfigPage> {
                 );
 
                 try {
-                  // MENGIRIM KELAS & SEMESTER KE GEMINI
                   List<QuestionModel> generatedQuestions = await GeminiService.generateQuiz(
                     mapel: widget.mapel,
                     jumlahSoal: _jumlahSoal.toInt(),
                     kesulitan: _kesulitan,
                     kelas: _kelasAnak,
                     semester: _semesterAnak,
-                    agama: widget.mapel == "Pendidikan Agama dan Budi Pekerti" ? _agamaPilihan : null, 
+                    jenisSoal: _jenisSoal, // TAMBAHAN PENGIRIMAN PARAMETER
+                    agama: widget.mapel == "Pendidikan Agama dan Budi Pekerti" ? _agamaPilihan : null,
                   );
 
                   if (context.mounted) Navigator.pop(context);
@@ -307,6 +332,35 @@ class _QuizConfigPageState extends State<QuizConfigPage> {
             child: Text(
               label,
               style: GoogleFonts.quicksand(
+                fontWeight: FontWeight.bold,
+                color: isSelected ? Colors.white : Colors.grey.shade600,
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  // TAMBAHAN: Helper Widget untuk Chip Format Kuis
+  Widget _buildFormatChip(String label, Color color) {
+    bool isSelected = _jenisSoal == label;
+    return Expanded(
+      child: GestureDetector(
+        onTap: () => setState(() => _jenisSoal = label),
+        child: Container(
+          padding: const EdgeInsets.symmetric(vertical: 12),
+          decoration: BoxDecoration(
+            color: isSelected ? color : Colors.white,
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: isSelected ? color : Colors.grey.shade300, width: 2),
+          ),
+          child: Center(
+            child: Text(
+              label,
+              textAlign: TextAlign.center,
+              style: GoogleFonts.quicksand(
+                fontSize: 13,
                 fontWeight: FontWeight.bold,
                 color: isSelected ? Colors.white : Colors.grey.shade600,
               ),

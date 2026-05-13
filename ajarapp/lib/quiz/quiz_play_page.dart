@@ -66,12 +66,14 @@ class _QuizPlayPageState extends State<QuizPlayPage> {
   }
 
   void _nextQuestion() {
-    // Simpan jawaban user ke dalam model sebelum pindah
     widget.questions[_currentIndex].userAnswer = _selectedAnswer;
 
-    if (_selectedAnswer == widget.questions[_currentIndex].correctAnswer) {
-      _score++;
+    if (widget.questions[_currentIndex].type == 'mcq') {
+      if (_selectedAnswer == widget.questions[_currentIndex].correctAnswer) {
+        _score++;
+      }
     }
+    // Note: Untuk soal essay, koreksi skor dilakukan nanti oleh AI di Review Page
 
     if (_currentIndex < widget.questions.length - 1) {
       setState(() {
@@ -85,6 +87,9 @@ class _QuizPlayPageState extends State<QuizPlayPage> {
 
   void _cekJawabanLaluSelesai() {
     _timer.cancel();
+
+    // Sementara ngitung skor dari MCQ aja. 
+    // Skor final + esai akan disempurnakan di integrasi AI koreksi nanti
     int finalScore = (_score / widget.questions.length * 100).round();
 
     Navigator.pushReplacement(
@@ -94,7 +99,7 @@ class _QuizPlayPageState extends State<QuizPlayPage> {
                 score: finalScore,
                 totalQuestions: widget.questions.length,
                 correctAnswers: _score,
-                questions: widget.questions, // Kirim list soal ke Result
+                questions: widget.questions, 
             )));
   }
 
@@ -102,31 +107,21 @@ class _QuizPlayPageState extends State<QuizPlayPage> {
     return await showDialog(
           context: context,
           builder: (context) => AlertDialog(
-            shape:
-                RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-            title: Text("Yakin mau keluar?",
-                style: GoogleFonts.nunito(
-                    fontWeight: FontWeight.bold, color: darkBlueText)),
-            content: Text(
-                "Kuisnya belum selesai lho, progress kamu bakal hilang kalau keluar sekarang.",
-                style: GoogleFonts.quicksand()),
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+            title: Text("Yakin mau keluar?", style: GoogleFonts.nunito(fontWeight: FontWeight.bold, color: darkBlueText)),
+            content: Text("Kuisnya belum selesai lho, progress kamu bakal hilang kalau keluar sekarang.", style: GoogleFonts.quicksand()),
             actions: [
               TextButton(
                 onPressed: () => Navigator.of(context).pop(false),
-                child: Text("Lanjut Kuis",
-                    style: GoogleFonts.nunito(
-                        fontWeight: FontWeight.bold, color: Colors.grey)),
+                child: Text("Lanjut Kuis", style: GoogleFonts.nunito(fontWeight: FontWeight.bold, color: Colors.grey)),
               ),
               ElevatedButton(
                 onPressed: () {
                   _timer.cancel();
                   Navigator.of(context).pop(true);
                 },
-                style:
-                    ElevatedButton.styleFrom(backgroundColor: Colors.redAccent),
-                child: Text("Tetap Keluar",
-                    style: GoogleFonts.nunito(
-                        fontWeight: FontWeight.bold, color: Colors.white)),
+                style: ElevatedButton.styleFrom(backgroundColor: Colors.redAccent),
+                child: Text("Tetap Keluar", style: GoogleFonts.nunito(fontWeight: FontWeight.bold, color: Colors.white)),
               ),
             ],
           ),
@@ -166,24 +161,15 @@ class _QuizPlayPageState extends State<QuizPlayPage> {
           title: Container(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
             decoration: BoxDecoration(
-              color: _timeLeftInSeconds < 60
-                  ? Colors.red.shade50
-                  : Colors.blue.shade50,
+              color: _timeLeftInSeconds < 60 ? Colors.red.shade50 : Colors.blue.shade50,
               borderRadius: BorderRadius.circular(20),
             ),
             child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                Icon(Icons.timer_outlined,
-                    color: _timeLeftInSeconds < 60 ? Colors.red : primaryBlue,
-                    size: 20),
+                Icon(Icons.timer_outlined, color: _timeLeftInSeconds < 60 ? Colors.red : primaryBlue, size: 20),
                 const SizedBox(width: 8),
-                Text(_formattedTime,
-                    style: GoogleFonts.nunito(
-                        fontWeight: FontWeight.w900,
-                        color: _timeLeftInSeconds < 60
-                            ? Colors.red
-                            : primaryBlue)),
+                Text(_formattedTime, style: GoogleFonts.nunito(fontWeight: FontWeight.w900, color: _timeLeftInSeconds < 60 ? Colors.red : primaryBlue)),
               ],
             ),
           ),
@@ -195,15 +181,10 @@ class _QuizPlayPageState extends State<QuizPlayPage> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                // Indikator Progress (Fix, tidak ikut ke-scroll)
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    Text(
-                        "Soal ${_currentIndex + 1} / ${widget.questions.length}",
-                        style: GoogleFonts.quicksand(
-                            fontWeight: FontWeight.bold,
-                            color: Colors.grey.shade600)),
+                    Text("Soal ${_currentIndex + 1} / ${widget.questions.length}", style: GoogleFonts.quicksand(fontWeight: FontWeight.bold, color: Colors.grey.shade600)),
                   ],
                 ),
                 const SizedBox(height: 12),
@@ -216,107 +197,102 @@ class _QuizPlayPageState extends State<QuizPlayPage> {
                 ),
                 const SizedBox(height: 24),
 
-                // BAGIAN UTAMA YANG BISA DI-SCROLL (Pertanyaan + Pilihan Ganda)
                 Expanded(
                   child: SingleChildScrollView(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.stretch,
                       children: [
-                        // Kotak Pertanyaan
                         Container(
                           padding: const EdgeInsets.all(20),
                           decoration: BoxDecoration(
                             color: Colors.white,
                             borderRadius: BorderRadius.circular(20),
-                            boxShadow: [
-                              BoxShadow(
-                                  color: Colors.blue.shade50,
-                                  blurRadius: 15,
-                                  offset: const Offset(0, 5))
-                            ],
-                            border: Border.all(
-                                color: Colors.blue.shade50, width: 2),
+                            boxShadow: [BoxShadow(color: Colors.blue.shade50, blurRadius: 15, offset: const Offset(0, 5))],
+                            border: Border.all(color: Colors.blue.shade50, width: 2),
                           ),
                           child: Text(
                             currentQ.question,
-                            style: GoogleFonts.nunito(
-                                fontSize: 18, // Font sedikit dikecilkan biar muat banyak
-                                fontWeight: FontWeight.w800,
-                                color: darkBlueText),
-                            textAlign: TextAlign.left, // Rata kiri lebih baik untuk teks panjang
+                            style: GoogleFonts.nunito(fontSize: 18, fontWeight: FontWeight.w800, color: darkBlueText),
+                            textAlign: TextAlign.left,
                           ),
                         ),
                         const SizedBox(height: 32),
 
-                        // Pilihan Jawaban
-                        // Pakai ListView shrinkWrap di dalam SingleChildScrollView
-                        ListView.builder(
-                          shrinkWrap: true,
-                          physics: const NeverScrollableScrollPhysics(), // Scroll diurus oleh parent (SingleChildScrollView)
-                          itemCount: currentQ.options.length,
-                          itemBuilder: (context, index) {
-                            String option = currentQ.options[index];
-                            bool isSelected = _selectedAnswer == option;
+                        // TAMBAHAN LOGIC: TAMPILKAN OPSI JIKA MCQ, TEXTFIELD JIKA ESAI
+                        if (currentQ.type == 'mcq')
+                          ListView.builder(
+                            shrinkWrap: true,
+                            physics: const NeverScrollableScrollPhysics(),
+                            itemCount: currentQ.options.length,
+                            itemBuilder: (context, index) {
+                              String option = currentQ.options[index];
+                              bool isSelected = _selectedAnswer == option;
 
-                            return GestureDetector(
-                              onTap: () =>
-                                  setState(() => _selectedAnswer = option),
-                              child: AnimatedContainer(
-                                duration: const Duration(milliseconds: 200),
-                                margin: const EdgeInsets.only(bottom: 16),
-                                padding: const EdgeInsets.all(20),
-                                decoration: BoxDecoration(
-                                  color: isSelected
-                                      ? accentOrange.withOpacity(0.1)
-                                      : Colors.white,
-                                  borderRadius: BorderRadius.circular(16),
-                                  border: Border.all(
-                                      color: isSelected
-                                          ? accentOrange
-                                          : Colors.grey.shade300,
-                                      width: isSelected ? 2.5 : 1.5),
-                                ),
-                                child: Row(
-                                  children: [
-                                    Container(
-                                      width: 30,
-                                      height: 30,
-                                      decoration: BoxDecoration(
-                                        shape: BoxShape.circle,
-                                        color: isSelected
-                                            ? accentOrange
-                                            : Colors.transparent,
-                                        border: Border.all(
-                                            color: isSelected
-                                                ? accentOrange
-                                                : Colors.grey.shade400),
+                              return GestureDetector(
+                                onTap: () => setState(() => _selectedAnswer = option),
+                                child: AnimatedContainer(
+                                  duration: const Duration(milliseconds: 200),
+                                  margin: const EdgeInsets.only(bottom: 16),
+                                  padding: const EdgeInsets.all(20),
+                                  decoration: BoxDecoration(
+                                    color: isSelected ? accentOrange.withOpacity(0.1) : Colors.white,
+                                    borderRadius: BorderRadius.circular(16),
+                                    border: Border.all(color: isSelected ? accentOrange : Colors.grey.shade300, width: isSelected ? 2.5 : 1.5),
+                                  ),
+                                  child: Row(
+                                    children: [
+                                      Container(
+                                        width: 30, height: 30,
+                                        decoration: BoxDecoration(
+                                          shape: BoxShape.circle,
+                                          color: isSelected ? accentOrange : Colors.transparent,
+                                          border: Border.all(color: isSelected ? accentOrange : Colors.grey.shade400),
+                                        ),
+                                        child: isSelected ? const Icon(Icons.check_rounded, size: 20, color: Colors.white) : null,
                                       ),
-                                      child: isSelected
-                                          ? const Icon(Icons.check_rounded,
-                                              size: 20, color: Colors.white)
-                                          : null,
-                                    ),
-                                    const SizedBox(width: 16),
-                                    Expanded(
-                                      child: Text(
-                                        option,
-                                        style: GoogleFonts.quicksand(
-                                          fontSize: 16,
-                                          fontWeight: isSelected
-                                              ? FontWeight.w700
-                                              : FontWeight.w600,
-                                          color: isSelected
-                                              ? accentOrange
-                                              : darkBlueText,
+                                      const SizedBox(width: 16),
+                                      Expanded(
+                                        child: Text(
+                                          option,
+                                          style: GoogleFonts.quicksand(
+                                            fontSize: 16,
+                                            fontWeight: isSelected ? FontWeight.w700 : FontWeight.w600,
+                                            color: isSelected ? accentOrange : darkBlueText,
+                                          ),
                                         ),
                                       ),
-                                    ),
-                                  ],
+                                    ],
+                                  ),
                                 ),
+                              );
+                            },
+                          )
+                        else
+                          TextFormField(
+                            key: ValueKey(_currentIndex), 
+                            maxLines: 5,
+                            initialValue: _selectedAnswer ?? "", 
+                            onChanged: (value) {
+                              setState(() {
+                                _selectedAnswer = value.trim().isNotEmpty ? value : null;
+                              });
+                            },
+                            style: GoogleFonts.quicksand(fontSize: 16, fontWeight: FontWeight.w600, color: darkBlueText),
+                            decoration: InputDecoration(
+                              hintText: "Ketik jawabanmu dengan jelas di sini ya...",
+                              hintStyle: GoogleFonts.quicksand(color: Colors.grey.shade400),
+                              filled: true,
+                              fillColor: Colors.blue.shade50.withOpacity(0.3),
+                              border: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(16),
+                                borderSide: BorderSide(color: primaryBlue.withOpacity(0.5), width: 2)
                               ),
-                            );
-                          },
-                        ),
+                              focusedBorder: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(16),
+                                borderSide: BorderSide(color: primaryBlue, width: 2)
+                              ),
+                            ),
+                          ),
                       ],
                     ),
                   ),
@@ -324,27 +300,18 @@ class _QuizPlayPageState extends State<QuizPlayPage> {
 
                 const SizedBox(height: 16),
 
-                // Tombol Lanjut (Fix, selalu ada di bawah layar)
                 ElevatedButton(
                   onPressed: _selectedAnswer == null ? null : _nextQuestion,
                   style: ElevatedButton.styleFrom(
                     backgroundColor: primaryBlue,
                     disabledBackgroundColor: Colors.grey.shade300,
                     minimumSize: const Size(double.infinity, 56),
-                    shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(20)),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
                     elevation: _selectedAnswer == null ? 0 : 4,
                   ),
                   child: Text(
-                      _currentIndex == widget.questions.length - 1
-                          ? "Selesai"
-                          : "Selanjutnya",
-                      style: GoogleFonts.nunito(
-                          fontSize: 18,
-                          fontWeight: FontWeight.bold,
-                          color: _selectedAnswer == null
-                              ? Colors.grey.shade600
-                              : Colors.white)),
+                      _currentIndex == widget.questions.length - 1 ? "Selesai" : "Selanjutnya",
+                      style: GoogleFonts.nunito(fontSize: 18, fontWeight: FontWeight.bold, color: _selectedAnswer == null ? Colors.grey.shade600 : Colors.white)),
                 )
               ],
             ),

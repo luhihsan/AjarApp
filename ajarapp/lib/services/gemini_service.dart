@@ -13,6 +13,7 @@ class GeminiService {
     required String kesulitan,
     required String kelas, 
     required String semester, 
+    required String jenisSoal,
     String? agama,
   }) async {
 
@@ -25,15 +26,66 @@ class GeminiService {
       apiKey: _apiKey,
     );
 
-    String mapelTarget = mapel;
-    if (mapel == "Pendidikan Agama dan Budi Pekerti" && agama != null) {
-      mapelTarget = "Pendidikan Agama $agama dan Budi Pekerti";
+    // 1. INSTRUKSI TIPE SOAL
+    String instruksiTipe = "";
+    if (jenisSoal == "Pilihan Ganda") {
+      instruksiTipe = "Buatkan SEMUA soal dalam bentuk Pilihan Ganda (type: 'mcq'). Wajib isi array options.";
+    } else if (jenisSoal == "Esai") {
+      instruksiTipe = "Buatkan SEMUA soal dalam bentuk Isian/Esai (type: 'essay'). Wajib KOSONGKAN array options menjadi []. Pertanyaan harus berupa instruksi untuk menjelaskan/menyebutkan.";
+    } else {
+      instruksiTipe = "Buatkan soal CAMPURAN (sebagian Pilihan Ganda type: 'mcq', dan sebagian Esai type: 'essay').";
+    }
+
+    // 2. CONTOH JSON DINAMIS (Ini kunci agar AI tidak bingung)
+    String contohJson = "";
+    if (jenisSoal == "Pilihan Ganda") {
+      contohJson = '''
+      [
+        {
+          "type": "mcq",
+          "question": "Apa fungsi klorofil pada daun?",
+          "options": ["A. Menyerap air", "B. Menyerap cahaya", "C. Menghasilkan oksigen", "D. Menyimpan makanan"],
+          "correctAnswer": "B. Menyerap cahaya",
+          "explanation": "Klorofil berfungsi menyerap cahaya matahari untuk fotosintesis."
+        }
+      ]''';
+    } else if (jenisSoal == "Esai") {
+      contohJson = '''
+      [
+        {
+          "type": "essay",
+          "question": "Jelaskan dengan singkat apa fungsi klorofil pada tumbuhan!",
+          "options": [],
+          "correctAnswer": "Menyerap energi dari cahaya matahari untuk membantu proses fotosintesis.",
+          "explanation": "Klorofil atau zat hijau daun memiliki peran utama dalam menyerap cahaya matahari."
+        }
+      ]''';
+    } else {
+      contohJson = '''
+      [
+        {
+          "type": "mcq",
+          "question": "Apa fungsi klorofil?",
+          "options": ["A. Air", "B. Cahaya", "C. Oksigen", "D. Makanan"],
+          "correctAnswer": "B. Cahaya",
+          "explanation": "Klorofil menyerap cahaya."
+        },
+        {
+          "type": "essay",
+          "question": "Sebutkan 3 manfaat tumbuhan bagi manusia!",
+          "options": [],
+          "correctAnswer": "Sumber makanan, penghasil oksigen, dan bahan bangunan.",
+          "explanation": "Tumbuhan sangat berguna karena..."
+        }
+      ]''';
     }
 
     final prompt = '''
      Kamu adalah seorang guru SD ahli yang kreatif dalam menyusun asesmen. Buatkan $jumlahSoal soal pilihan ganda untuk mata pelajaran $mapel.
       Target siswa: Kelas $kelas SD, Semester $semester.
       Tingkat kesulitan soal: $kesulitan.
+
+      $instruksiTipe 
       
       Aturan ketat:
       1. Materi harus BENAR-BENAR sesuai dengan Capaian Pembelajaran (CP) Kurikulum Merdeka/K13 kelas $kelas SD semester $semester di Indonesia.
@@ -41,16 +93,7 @@ class GeminiService {
       3. KONTEKSTUAL: Gunakan narasi atau situasi sehari-hari yang relevan dengan anak usia SD di Indonesia agar soal tidak terasa kaku/teoretis saja.
       4. DISTRAKTOR: Pilihan jawaban salah (distraktor) harus masuk akal dan tidak terlalu mencolok perbedaannya dengan jawaban benar.
       5. Kembalikan balasan HANYA dalam format array JSON yang valid tanpa markdown ```json atau teks pembuka/penutup lainnya.
-      
-      Format JSON harus persis seperti ini:
-      [
-        {
-          "question": "Pertanyaan di sini...",
-          "options": ["A. Opsi", "B. Opsi", "C. Opsi", "D. Opsi"],
-          "correctAnswer": "X. Jawaban yang benar",
-          "explanation": "Penjelasan singkat mengapa jawaban itu benar."
-        }
-      ]
+      3. Format JSON HARUS MENGIKUTI STRUKTUR CONTOH INI: $contohJson
     ''';
 
     try {

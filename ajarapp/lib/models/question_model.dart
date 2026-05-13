@@ -1,4 +1,5 @@
 class QuestionModel {
+  final String type; 
   final String question;
   final List<String> options;
   final String correctAnswer;
@@ -6,6 +7,7 @@ class QuestionModel {
   String? userAnswer;
 
   QuestionModel({
+    required this.type,
     required this.question,
     required this.options,
     required this.correctAnswer,
@@ -15,9 +17,10 @@ class QuestionModel {
 
   factory QuestionModel.fromJson(Map<String, dynamic> json) {
     return QuestionModel(
+      type: json['type'] ?? 'mcq', 
       question: json['question'] ?? '',
       options: List<String>.from(json['options'] ?? []),
-      correctAnswer: json['correctAnswer'] ?? '',
+      correctAnswer: json['correctAnswer'] ?? '', 
       explanation: json['explanation'] ?? '',
     );
   }
