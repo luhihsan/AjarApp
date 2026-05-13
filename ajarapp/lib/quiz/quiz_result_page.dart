@@ -9,7 +9,6 @@ class QuizResultPage extends StatelessWidget {
   final int totalQuestions;
   final int correctAnswers;
   
-  // 1. TAMBAHKAN PARAMETER INI (Ini yang bikin error tadi)
   final List<QuestionModel> questions; 
 
   const QuizResultPage({
@@ -17,7 +16,7 @@ class QuizResultPage extends StatelessWidget {
     required this.score, 
     required this.totalQuestions, 
     required this.correctAnswers,
-    required this.questions, // 2. WAJIB DITAMBAHKAN DI SINI
+    required this.questions, 
   });
 
   @override

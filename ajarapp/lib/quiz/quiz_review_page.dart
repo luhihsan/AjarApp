@@ -28,20 +28,26 @@ class _QuizReviewPageState extends State<QuizReviewPage> {
   }
 
   Future<void> _getAIEvaluation() async {
-    // Logic memanggil Gemini untuk evaluasi kualitatif
-    // Kita bisa buat method baru di GeminiService khusus untuk evaluasi
     try {
-      // Implementasi singkat: panggil service khusus evaluasi
-      // String eval = await GeminiService.getEvaluation(widget.questions, widget.score);
-      setState(() {
-        _aiEvaluation = "Kamu hebat di materi ini, tapi perlu teliti di bagian fotosintesis ya!"; 
-        _isLoadingEval = false;
-      });
+      // Panggil AI secara dinamis berdasarkan data soal dan skor
+      String eval = await GeminiService.generateEvaluation(
+        questions: widget.questions, 
+        score: widget.score
+      );
+      
+      if (mounted) {
+        setState(() {
+          _aiEvaluation = eval;
+          _isLoadingEval = false;
+        });
+      }
     } catch (e) {
-      setState(() {
-        _aiEvaluation = "Gagal memuat evaluasi AI.";
-        _isLoadingEval = false;
-      });
+      if (mounted) {
+        setState(() {
+          _aiEvaluation = "Aduh, gagal memuat evaluasi AI.";
+          _isLoadingEval = false;
+        });
+      }
     }
   }
 

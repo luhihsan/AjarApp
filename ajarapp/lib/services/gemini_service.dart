@@ -56,4 +56,45 @@ class GeminiService {
       throw Exception("Gagal membuat soal: $e");
     }
   }
+
+    static Future<String> generateEvaluation({
+    required List<QuestionModel> questions,
+    required int score,
+  }) async {
+    if (_apiKey.isEmpty) {
+      return "Evaluasi tidak tersedia (API Key kosong).";
+    }
+
+    final model = GenerativeModel(
+      model: 'gemini-2.5-flash', 
+      apiKey: _apiKey,
+    );
+
+    // 1. Rangkum data jawaban untuk di-audit oleh AI
+    String hasilKuis = questions.map((q) {
+      bool isCorrect = q.userAnswer == q.correctAnswer;
+      return "- Soal: ${q.question}\n  Status: ${isCorrect ? 'Benar' : 'Salah'}";
+    }).join("\n");
+
+    // 2. Prompt Engineering Khusus Evaluasi
+    final prompt = '''
+      Kamu adalah seorang guru SD yang asik, ramah, dan sangat suportif.
+      Seorang murid baru saja menyelesaikan kuis dengan nilai $score dari 100.
+      
+      Berikut adalah detail apa yang dia jawab dengan benar dan salah:
+      $hasilKuis
+      
+      Tugasmu:
+      Buatkan 1 paragraf singkat (maksimal 3-4 kalimat) berisi pujian, evaluasi spesifik tentang materi apa yang harus dia pelajari lagi berdasarkan soal yang berstatus 'Salah', dan motivasi penutup. 
+      Jika nilainya 100, berikan pujian luar biasa.
+      Gunakan bahasa yang sangat mudah dipahami anak SD. Dilarang keras menggunakan format markdown seperti bold (**) atau bullet points. Tulis murni sebagai paragraf biasa.
+    ''';
+
+    try {
+      final response = await model.generateContent([Content.text(prompt)]);
+      return response.text?.trim() ?? "Tetap semangat dan rajin berlatih ya!";
+    } catch (e) {
+      return "Wah, koneksi ke ruang guru sedang terputus. Tetap semangat belajarnya ya!";
+    }
+  }
 }
