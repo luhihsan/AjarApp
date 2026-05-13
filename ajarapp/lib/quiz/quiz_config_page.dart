@@ -1,7 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+
 import '../services/gemini_service.dart';
 import '../models/question_model.dart';
+import 'quiz_play_page.dart';
 
 class QuizConfigPage extends StatefulWidget {
   final String mapel;
@@ -17,13 +21,69 @@ class _QuizConfigPageState extends State<QuizConfigPage> {
   final Color darkBlueText = const Color(0xFF2C6C85);
   final Color bgColor = const Color(0xFFFDFDFD);
 
-  // State untuk konfigurasi
+  // State Konfigurasi Soal
   double _jumlahSoal = 5;
   int _waktuMenit = 10;
   String _kesulitan = "Sedang";
 
+  // State Data Anak
+  String _kelasAnak = "";
+  String _semesterAnak = "";
+  bool _isLoadingData = true; // Buat nahan UI sebelum data anak keload
+
+  @override
+  void initState() {
+    super.initState();
+    _fetchChildData();
+  }
+
+  // LOGIC TARIK DATA ANAK DARI FIRESTORE
+  Future<void> _fetchChildData() async {
+    try {
+      String uidOrtu = FirebaseAuth.instance.currentUser!.uid;
+      
+      // Ambil dokumen anak pertama dari sub-collection 'children'
+      var childDocs = await FirebaseFirestore.instance
+          .collection('users')
+          .doc(uidOrtu)
+          .collection('children')
+          .limit(1)
+          .get();
+
+      if (childDocs.docs.isNotEmpty) {
+        var data = childDocs.docs.first.data();
+        setState(() {
+          _kelasAnak = data['kelas'] ?? "Umum";
+          _semesterAnak = data['semester'] ?? "Umum";
+          _isLoadingData = false;
+        });
+      } else {
+        // Fallback kalau ortu belum masukin data anak
+        setState(() {
+          _kelasAnak = "Umum";
+          _semesterAnak = "Umum";
+          _isLoadingData = false;
+        });
+      }
+    } catch (e) {
+      setState(() {
+        _kelasAnak = "Umum";
+        _semesterAnak = "Umum";
+        _isLoadingData = false;
+      });
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
+    // Kalau data anak belum ke-load, tampilin loading spinner
+    if (_isLoadingData) {
+      return Scaffold(
+        backgroundColor: bgColor,
+        body: Center(child: CircularProgressIndicator(color: primaryBlue)),
+      );
+    }
+
     return Scaffold(
       backgroundColor: bgColor,
       appBar: AppBar(
@@ -37,9 +97,29 @@ class _QuizConfigPageState extends State<QuizConfigPage> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Header Image/Icon
-            Center(
-              child: Icon(Icons.settings_suggest_rounded, size: 80, color: accentOrange),
+            // Header Info Anak (Biar transparan ke Ortu kalau soalnya udah dicustomize)
+            Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: Colors.blue.shade50.withOpacity(0.5),
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(color: primaryBlue.withOpacity(0.3)),
+              ),
+              child: Row(
+                children: [
+                  Icon(Icons.face_retouching_natural_rounded, color: primaryBlue, size: 32),
+                  const SizedBox(width: 16),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text("Target Soal AI:", style: GoogleFonts.quicksand(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.grey.shade600)),
+                        Text("Kelas $_kelasAnak SD - Semester $_semesterAnak", style: GoogleFonts.nunito(fontSize: 16, fontWeight: FontWeight.w800, color: darkBlueText)),
+                      ],
+                    ),
+                  )
+                ],
+              ),
             ),
             const SizedBox(height: 32),
 
@@ -49,7 +129,7 @@ class _QuizConfigPageState extends State<QuizConfigPage> {
               value: _jumlahSoal,
               min: 5,
               max: 20,
-              divisions: 3, // 5, 10, 15, 20
+              divisions: 3, 
               activeColor: primaryBlue,
               inactiveColor: Colors.blue.shade100,
               label: _jumlahSoal.toInt().toString(),
@@ -101,7 +181,6 @@ class _QuizConfigPageState extends State<QuizConfigPage> {
             // Tombol Generate
             ElevatedButton(
               onPressed: () async {
-                // 1. Tampilkan Loading Dialog
                 showDialog(
                   context: context,
                   barrierDismissible: false,
@@ -109,24 +188,22 @@ class _QuizConfigPageState extends State<QuizConfigPage> {
                 );
 
                 try {
-                  // 2. Panggil Gemini Service
+                  // MENGIRIM KELAS & SEMESTER KE GEMINI
                   List<QuestionModel> generatedQuestions = await GeminiService.generateQuiz(
                     mapel: widget.mapel,
                     jumlahSoal: _jumlahSoal.toInt(),
                     kesulitan: _kesulitan,
+                    kelas: _kelasAnak,
+                    semester: _semesterAnak,
                   );
 
-                  // 3. Tutup Loading
                   if (context.mounted) Navigator.pop(context);
 
-                  // 4. Navigasi ke Halaman Kuis (QuizPlayPage)
                   if (context.mounted) {
                     ScaffoldMessenger.of(context).showSnackBar(
                       const SnackBar(content: Text("Soal berhasil dibuat!"), backgroundColor: Colors.green),
                     );
                     
-                    // TODO: Arahkan ke QuizPlayPage dengan membawa data generatedQuestions
-                    /*
                     Navigator.pushReplacement(
                       context, 
                       MaterialPageRoute(builder: (_) => QuizPlayPage(
@@ -134,10 +211,8 @@ class _QuizConfigPageState extends State<QuizConfigPage> {
                         waktuMenit: _waktuMenit
                       ))
                     );
-                    */
                   }
                 } catch (e) {
-                  // Tutup loading jika error
                   if (context.mounted) {
                     Navigator.pop(context);
                     ScaffoldMessenger.of(context).showSnackBar(

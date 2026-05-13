@@ -13,15 +13,14 @@ class AppValidator {
 
   static String? validatePassword(String? value) {
     if (value == null || value.isEmpty) return "Password wajib diisi.";
-  
     if (value.length < 8 ||
         !value.contains(RegExp(r'[A-Z]')) ||
-        !value.contains(RegExp(r'[0-9]')) ||
-        !value.contains(RegExp(r'[!@#$%^&*(),.?":{}|<>]'))) {
+        !value.contains(RegExp(r'[0-9]'))) {
       return "Kriteria keamanan password belum terpenuhi.";
     }
     return null;
   }
+  
 }
 
 class AuthExceptionHandler {

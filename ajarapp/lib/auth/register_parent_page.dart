@@ -137,21 +137,20 @@ class _RegisterParentPageState extends State<RegisterParentPage> {
                   validator: AppValidator.validateEmail, 
                   keyboardType: TextInputType.emailAddress,
                   style: GoogleFonts.quicksand(fontWeight: FontWeight.w600, color: darkBlueText),
-                  decoration: _customInputDecoration("Email Ortu", Icons.email_outlined),
+                  decoration: _customInputDecoration("Email", Icons.email_outlined),
                 ),
                 const SizedBox(height: 16),
 
                 // Form Password 
                 TextFormField(
                   controller: _passwordController,
-                  validator: AppValidator.validatePassword,
+                  validator: AppValidator.validatePassword, 
                   obscureText: true,
                   style: GoogleFonts.quicksand(fontWeight: FontWeight.w600, color: darkBlueText),
                   decoration: _customInputDecoration("Password", Icons.lock_outline_rounded).copyWith(
-                    // Tambahan helper text di bawah form
-                    helperText: "Minimal 8 karakter, mencakup huruf kapital, angka, dan simbol.",
+                    helperText: "Min. 8 karakter, mencakup huruf kapital dan angka.",
                     helperMaxLines: 2,
-                    helperStyle: GoogleFonts.quicksand(color: Colors.grey.shade600, fontWeight: FontWeight.w500),
+                    helperStyle: GoogleFonts.quicksand(color: Colors.grey.shade600, fontWeight: FontWeight.w600),
                   ),
                 ),
 

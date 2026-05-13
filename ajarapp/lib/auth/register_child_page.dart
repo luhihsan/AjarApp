@@ -3,6 +3,8 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
+import 'package:ajarapp/auth/login_page.dart';
+
 class RegisterChildPage extends StatefulWidget {
   const RegisterChildPage({super.key});
 
@@ -60,11 +62,17 @@ class _RegisterChildPageState extends State<RegisterChildPage> {
         'createdAt': DateTime.now(),
       });
 
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-        content: Text("Hore! Profil anak berhasil dibuat!", style: GoogleFonts.quicksand()),
+     ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+        content: Text("Hore! Profil anak berhasil dibuat! Silakan masuk.", style: GoogleFonts.quicksand()),
         backgroundColor: Colors.green,
       ));
-      // TODO: Navigasi ke Dashboard
+     if (mounted) {
+        Navigator.pushAndRemoveUntil(
+          context, 
+          MaterialPageRoute(builder: (_) => const LoginPage()),
+          (Route<dynamic> route) => false, 
+        );
+      }
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(e.toString())));
     }

@@ -4,6 +4,7 @@ import 'package:google_fonts/google_fonts.dart';
 
 import 'register_parent_page.dart';
 import 'package:ajarapp/utils/auth_helper.dart';
+import '../main_screen/main_screen.dart';
 
 class LoginPage extends StatefulWidget {
   const LoginPage({super.key});
@@ -34,7 +35,8 @@ class _LoginPageState extends State<LoginPage> {
       );
 
       if (mounted) {
-        CustomSnackBar.show(context, "Selamat datang kembali!", isError: false);
+        CustomSnackBar.show(context, "Otentikasi berhasil. Mengalihkan...", isError: false);
+        Navigator.pushReplacement(context, MaterialPageRoute(builder: (_) => const MainScreen()));
       }
     } on FirebaseAuthException catch (e) {
       String errorMessage = AuthExceptionHandler.getMessage(e);
