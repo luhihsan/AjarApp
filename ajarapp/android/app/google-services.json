@@ -12,7 +12,20 @@
           "package_name": "com.example.ajarapp"
         }
       },
-      "oauth_client": [],
+      "oauth_client": [
+        {
+          "client_id": "244163226988-i7otsj2gqtdtk3t9aalq03c0ioe62l6m.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.example.ajarapp",
+            "certificate_hash": "8071751fa6d58977e9e53cd9b065e3fd8a41ed69"
+          }
+        },
+        {
+          "client_id": "244163226988-830ap1u8q3rqltdn03i440abhp09b4rs.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
       "api_key": [
         {
           "current_key": "AIzaSyC0nALHZJlK46nXjeDeGgGsz75LLoTAMCA"
@@ -20,7 +33,19 @@
       ],
       "services": {
         "appinvite_service": {
-          "other_platform_oauth_client": []
+          "other_platform_oauth_client": [
+            {
+              "client_id": "244163226988-830ap1u8q3rqltdn03i440abhp09b4rs.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "244163226988-6ahefcvkfjhcufl6cnu2vcf6vqj6nc6d.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.example.ajarapp"
+              }
+            }
+          ]
         }
       }
     }

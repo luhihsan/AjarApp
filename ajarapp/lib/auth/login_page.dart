@@ -13,38 +13,30 @@ class LoginPage extends StatefulWidget {
 }
 
 class _LoginPageState extends State<LoginPage> {
-  // Key untuk memicu validasi Form
   final _formKey = GlobalKey<FormState>();
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
 
-  // Palet Warna Senada
   final Color primaryBlue = const Color(0xFF67BEE0);
   final Color accentOrange = const Color(0xFFFF8E00);
   final Color darkBlueText = const Color(0xFF2C6C85);
   final Color bgColor = const Color(0xFFFDFDFD);
 
   Future<void> _login() async {
-    // 1. CEK VALIDASI FORM (Cegah hit Firebase kalau form kosong/salah format)
     if (!_formKey.currentState!.validate()) {
       return;
     }
 
     try {
-      // 2. Eksekusi Login ke Firebase
       await FirebaseAuth.instance.signInWithEmailAndPassword(
         email: _emailController.text.trim(),
         password: _passwordController.text.trim(),
       );
 
-      // 3. Jika Berhasil
       if (mounted) {
         CustomSnackBar.show(context, "Selamat datang kembali!", isError: false);
-        // TODO: Arahkan ke Dashboard
-        // Navigator.pushReplacement(context, MaterialPageRoute(builder: (_) => const DashboardPage()));
       }
     } on FirebaseAuthException catch (e) {
-      // Tangkap dan terjemahkan pesan error Firebase
       String errorMessage = AuthExceptionHandler.getMessage(e);
       CustomSnackBar.show(context, errorMessage);
     } catch (e) {
@@ -52,7 +44,6 @@ class _LoginPageState extends State<LoginPage> {
     }
   }
 
-  // Helper untuk styling input text
   InputDecoration _customInputDecoration(String label, IconData icon) {
     return InputDecoration(
       labelText: label,
@@ -116,19 +107,18 @@ class _LoginPageState extends State<LoginPage> {
                 TextFormField(
                   controller: _emailController,
                   validator: AppValidator
-                      .validateEmail, // Panggil validasi format email
+                      .validateEmail, 
                   keyboardType: TextInputType.emailAddress,
                   style: GoogleFonts.quicksand(
                       fontWeight: FontWeight.w600, color: darkBlueText),
                   decoration: _customInputDecoration(
-                      "Email Ortu", Icons.email_outlined),
+                      "Email", Icons.email_outlined),
                 ),
                 const SizedBox(height: 16),
 
                 // Form Password
                 TextFormField(
                   controller: _passwordController,
-                  // Validasi simpel: cuma ngecek kosong atau nggak
                   validator: (value) => value == null || value.isEmpty
                       ? "Password tidak boleh kosong ya"
                       : null,

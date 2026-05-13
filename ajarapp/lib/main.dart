@@ -1,3 +1,4 @@
+import 'package:ajarapp/main_screen/main_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'firebase_options.dart';
@@ -21,7 +22,7 @@ class AjarApp extends StatelessWidget {
     return MaterialApp(
       title: 'Ajar App',
       theme: ThemeData(primarySwatch: Colors.blue),
-      home: const LandingPage(), 
+      home: const MainScreen(), 
     );
   }
 }
