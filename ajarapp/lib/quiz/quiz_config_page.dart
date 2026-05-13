@@ -21,15 +21,16 @@ class _QuizConfigPageState extends State<QuizConfigPage> {
   final Color darkBlueText = const Color(0xFF2C6C85);
   final Color bgColor = const Color(0xFFFDFDFD);
 
-  // State Konfigurasi Soal
   double _jumlahSoal = 5;
   int _waktuMenit = 10;
   String _kesulitan = "Sedang";
 
-  // State Data Anak
   String _kelasAnak = "";
   String _semesterAnak = "";
-  bool _isLoadingData = true; // Buat nahan UI sebelum data anak keload
+  bool _isLoadingData = true; 
+
+  String _agamaPilihan = "Islam"; 
+  final List<String> _listAgama = ["Islam", "Kristen", "Katolik", "Hindu", "Buddha"];
 
   @override
   void initState() {
@@ -37,12 +38,9 @@ class _QuizConfigPageState extends State<QuizConfigPage> {
     _fetchChildData();
   }
 
-  // LOGIC TARIK DATA ANAK DARI FIRESTORE
   Future<void> _fetchChildData() async {
     try {
       String uidOrtu = FirebaseAuth.instance.currentUser!.uid;
-      
-      // Ambil dokumen anak pertama dari sub-collection 'children'
       var childDocs = await FirebaseFirestore.instance
           .collection('users')
           .doc(uidOrtu)
@@ -58,7 +56,6 @@ class _QuizConfigPageState extends State<QuizConfigPage> {
           _isLoadingData = false;
         });
       } else {
-        // Fallback kalau ortu belum masukin data anak
         setState(() {
           _kelasAnak = "Umum";
           _semesterAnak = "Umum";
@@ -76,7 +73,6 @@ class _QuizConfigPageState extends State<QuizConfigPage> {
 
   @override
   Widget build(BuildContext context) {
-    // Kalau data anak belum ke-load, tampilin loading spinner
     if (_isLoadingData) {
       return Scaffold(
         backgroundColor: bgColor,
@@ -97,7 +93,6 @@ class _QuizConfigPageState extends State<QuizConfigPage> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Header Info Anak (Biar transparan ke Ortu kalau soalnya udah dicustomize)
             Container(
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
@@ -122,6 +117,35 @@ class _QuizConfigPageState extends State<QuizConfigPage> {
               ),
             ),
             const SizedBox(height: 32),
+
+            if (widget.mapel == "Pendidikan Agama dan Budi Pekerti") ...[
+              Text("Agama Siswa", style: GoogleFonts.nunito(fontSize: 18, fontWeight: FontWeight.bold, color: darkBlueText)),
+              const SizedBox(height: 8),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                decoration: BoxDecoration(
+                  color: Colors.blue.shade50.withOpacity(0.5),
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(color: primaryBlue.withOpacity(0.3)),
+                ),
+                child: DropdownButtonHideUnderline(
+                  child: DropdownButton<String>(
+                    value: _agamaPilihan,
+                    isExpanded: true,
+                    icon: Icon(Icons.keyboard_arrow_down_rounded, color: primaryBlue),
+                    style: GoogleFonts.quicksand(fontWeight: FontWeight.w600, color: darkBlueText, fontSize: 16),
+                    items: _listAgama.map((String val) {
+                      return DropdownMenuItem<String>(
+                        value: val,
+                        child: Text(val),
+                      );
+                    }).toList(),
+                    onChanged: (val) => setState(() => _agamaPilihan = val!),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 24),
+            ],
 
             // 1. Slider Jumlah Soal
             Text("Jumlah Soal: ${_jumlahSoal.toInt()}", style: GoogleFonts.nunito(fontSize: 18, fontWeight: FontWeight.bold, color: darkBlueText)),
@@ -225,6 +249,7 @@ class _QuizConfigPageState extends State<QuizConfigPage> {
                     kesulitan: _kesulitan,
                     kelas: _kelasAnak,
                     semester: _semesterAnak,
+                    agama: widget.mapel == "Pendidikan Agama dan Budi Pekerti" ? _agamaPilihan : null, 
                   );
 
                   if (context.mounted) Navigator.pop(context);

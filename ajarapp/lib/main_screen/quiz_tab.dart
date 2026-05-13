@@ -95,6 +95,7 @@ class QuizTab extends StatelessWidget {
               mainAxisSpacing: 16,
               childAspectRatio: 0.9, // Ngatur proporsi kotak
               children: [
+
                 _buildSubjectCard(
                   title: "Matematika", 
                   icon: Icons.calculate_rounded, 
@@ -108,6 +109,7 @@ class QuizTab extends StatelessWidget {
                     );
                   } 
                 ),
+
                 _buildSubjectCard(
                   title: "Bahasa Indonesia", 
                   icon: Icons.menu_book_rounded, 
@@ -121,6 +123,7 @@ class QuizTab extends StatelessWidget {
                     );
                   } 
                 ),
+
                 _buildSubjectCard(
                   title: "Bahasa Inggris", 
                   icon: Icons.abc_rounded, 
@@ -134,6 +137,7 @@ class QuizTab extends StatelessWidget {
                     );
                   } 
                 ),
+
                 _buildSubjectCard(
                   title: "IPAS", 
                   icon: Icons.biotech_rounded, 
@@ -145,6 +149,42 @@ class QuizTab extends StatelessWidget {
                         builder: (_) => const QuizConfigPage(mapel: "IPAS"),
                       ),
                     );
+                  }
+                ),
+
+                _buildSubjectCard(
+                  title: "Pend. Agama", 
+                  icon: Icons.star_rounded, 
+                  color: Colors.teal.shade400,
+                  onTap: () {
+                    Navigator.push(context, MaterialPageRoute(builder: (_) => const QuizConfigPage(mapel: "Pendidikan Agama dan Budi Pekerti")));
+                  }
+                ),
+
+                _buildSubjectCard(
+                  title: "Pancasila", 
+                  icon: Icons.shield_rounded, 
+                  color: Colors.redAccent.shade400,
+                  onTap: () {
+                    Navigator.push(context, MaterialPageRoute(builder: (_) => const QuizConfigPage(mapel: "Pendidikan Pancasila")));
+                  }
+                ),
+
+                _buildSubjectCard(
+                  title: "PJOK", 
+                  icon: Icons.sports_soccer_rounded, 
+                  color: Colors.orangeAccent.shade400,
+                  onTap: () {
+                    Navigator.push(context, MaterialPageRoute(builder: (_) => const QuizConfigPage(mapel: "PJOK")));
+                  }
+                ),
+
+                _buildSubjectCard(
+                  title: "Informatika", 
+                  icon: Icons.computer_rounded, 
+                  color: Colors.indigo.shade400,
+                  onTap: () {
+                    Navigator.push(context, MaterialPageRoute(builder: (_) => const QuizConfigPage(mapel: "Informatika")));
                   }
                 ),
               ],

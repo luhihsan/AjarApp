@@ -13,6 +13,7 @@ class GeminiService {
     required String kesulitan,
     required String kelas, 
     required String semester, 
+    String? agama,
   }) async {
 
     if (_apiKey.isEmpty) {
@@ -23,6 +24,11 @@ class GeminiService {
       model: 'gemini-2.5-flash',
       apiKey: _apiKey,
     );
+
+    String mapelTarget = mapel;
+    if (mapel == "Pendidikan Agama dan Budi Pekerti" && agama != null) {
+      mapelTarget = "Pendidikan Agama $agama dan Budi Pekerti";
+    }
 
     final prompt = '''
      Kamu adalah seorang guru SD ahli yang kreatif dalam menyusun asesmen. Buatkan $jumlahSoal soal pilihan ganda untuk mata pelajaran $mapel.
