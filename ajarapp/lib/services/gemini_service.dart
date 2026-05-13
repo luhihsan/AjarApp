@@ -25,20 +25,24 @@ class GeminiService {
     );
 
     final prompt = '''
-      Kamu adalah seorang guru SD yang ahli. Buatkan $jumlahSoal soal pilihan ganda untuk mata pelajaran $mapel.
+     Kamu adalah seorang guru SD ahli yang kreatif dalam menyusun asesmen. Buatkan $jumlahSoal soal pilihan ganda untuk mata pelajaran $mapel.
       Target siswa: Kelas $kelas SD, Semester $semester.
       Tingkat kesulitan soal: $kesulitan.
       
       Aturan ketat:
-      1. Materi harus BENAR-BENAR sesuai dengan kurikulum kelas $kelas SD semester $semester di Indonesia.
-      2. Kembalikan balasan HANYA dalam format array JSON yang valid tanpa markdown ```json.
-      3. Format JSON harus persis seperti ini:
+      1. Materi harus BENAR-BENAR sesuai dengan Capaian Pembelajaran (CP) Kurikulum Merdeka/K13 kelas $kelas SD semester $semester di Indonesia.
+      2. VARIATIVITAS: Pastikan soal mencakup sub-topik yang berbeda dalam satu semester. Jangan hanya fokus pada satu bab. Gunakan variasi kata tanya (Mengapa, Bagaimana, Analisislah) dan hindari pengulangan pola kalimat.
+      3. KONTEKSTUAL: Gunakan narasi atau situasi sehari-hari yang relevan dengan anak usia SD di Indonesia agar soal tidak terasa kaku/teoretis saja.
+      4. DISTRAKTOR: Pilihan jawaban salah (distraktor) harus masuk akal dan tidak terlalu mencolok perbedaannya dengan jawaban benar.
+      5. Kembalikan balasan HANYA dalam format array JSON yang valid tanpa markdown ```json atau teks pembuka/penutup lainnya.
+      
+      Format JSON harus persis seperti ini:
       [
         {
-          "question": "Apa fungsi klorofil pada daun?",
-          "options": ["A. Menyerap air", "B. Menyerap cahaya", "C. Menghasilkan oksigen", "D. Menyimpan makanan"],
-          "correctAnswer": "B. Menyerap cahaya",
-          "explanation": "Klorofil berfungsi menyerap cahaya matahari untuk fotosintesis."
+          "question": "Pertanyaan di sini...",
+          "options": ["A. Opsi", "B. Opsi", "C. Opsi", "D. Opsi"],
+          "correctAnswer": "X. Jawaban yang benar",
+          "explanation": "Penjelasan singkat mengapa jawaban itu benar."
         }
       ]
     ''';
