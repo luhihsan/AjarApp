@@ -24,11 +24,13 @@ class _RegisterChildPageState extends State<RegisterChildPage> {
   final List<String> _kelasList = ['1', '2', '3', '4', '5', '6'];
   final List<String> _semesterList = ['Ganjil', 'Genap'];
   
-  // List mapel disesuaikan dengan kurikulum sekarang
   final List<String> _mapelList = [
     'Matematika', 'Bahasa Indonesia', 'IPAS', 
     'Pend. Pancasila', 'Bahasa Inggris', 'Seni Budaya', 'PJOK'
   ];
+
+  // TAMBAHAN STATE UNTUK LOADING
+  bool _isLoading = false;
 
   final Color primaryBlue = const Color(0xFF67BEE0);
   final Color accentOrange = const Color(0xFFFF8E00);
@@ -44,6 +46,11 @@ class _RegisterChildPageState extends State<RegisterChildPage> {
       ));
       return;
     }
+
+    // TAMBAHAN: Mulai loading setelah validasi lulus
+    setState(() {
+      _isLoading = true;
+    });
 
     try {
       String uidOrtu = FirebaseAuth.instance.currentUser!.uid;
@@ -75,10 +82,16 @@ class _RegisterChildPageState extends State<RegisterChildPage> {
       }
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(e.toString())));
+    } finally {
+      // TAMBAHAN: Hentikan loading
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+      }
     }
   }
 
-  // Dialog untuk tambah mapel custom
   Future<void> _tambahMapelCustom() async {
     String newMapel = "";
     return showDialog(
@@ -109,7 +122,7 @@ class _RegisterChildPageState extends State<RegisterChildPage> {
                 if (newMapel.trim().isNotEmpty) {
                   setState(() {
                     _mapelList.add(newMapel.trim());
-                    _mapelFav.add(newMapel.trim()); // Otomatis terpilih
+                    _mapelFav.add(newMapel.trim()); 
                   });
                 }
                 Navigator.pop(context);
@@ -239,7 +252,6 @@ class _RegisterChildPageState extends State<RegisterChildPage> {
               ),
               const SizedBox(height: 12),
               
-              // Widget WRAP dengan tambahan ActionChip custom
               Wrap(
                 spacing: 8.0,
                 runSpacing: 4.0,
@@ -267,7 +279,6 @@ class _RegisterChildPageState extends State<RegisterChildPage> {
                     );
                   }).toList(),
                   
-                  // Tombol Tambah Lainnya
                   ActionChip(
                     label: Text("+ Tambah", style: GoogleFonts.quicksand(fontWeight: FontWeight.bold, color: primaryBlue)),
                     backgroundColor: bgColor,
@@ -279,26 +290,28 @@ class _RegisterChildPageState extends State<RegisterChildPage> {
                   ),
                 ],
               ),
-
               const SizedBox(height: 40),
 
-              ElevatedButton(
-                onPressed: _simpanDataAnak,
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: primaryBlue,
-                  foregroundColor: Colors.white,
-                  elevation: 4,
-                  shadowColor: primaryBlue.withOpacity(0.4),
-                  minimumSize: const Size(double.infinity, 56),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(20),
+              // TAMBAHAN: Tampilkan loading kalau _isLoading true
+              _isLoading 
+                ? Center(child: CircularProgressIndicator(color: primaryBlue))
+                : ElevatedButton(
+                    onPressed: _simpanDataAnak,
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: primaryBlue,
+                      foregroundColor: Colors.white,
+                      elevation: 4,
+                      shadowColor: primaryBlue.withOpacity(0.4),
+                      minimumSize: const Size(double.infinity, 56),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(20),
+                      ),
+                    ),
+                    child: Text(
+                      "Mulai Petualangan Belajar!",
+                      style: GoogleFonts.nunito(fontSize: 18, fontWeight: FontWeight.bold),
+                    ),
                   ),
-                ),
-                child: Text(
-                  "Mulai Petualangan Belajar!",
-                  style: GoogleFonts.nunito(fontSize: 18, fontWeight: FontWeight.bold),
-                ),
-              ),
               const SizedBox(height: 20),
             ],
           ),

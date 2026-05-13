@@ -18,6 +18,10 @@ class _LoginPageState extends State<LoginPage> {
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
 
+  // TAMBAHAN STATE UNTUK LOADING & PASSWORD
+  bool _isLoading = false;
+  bool _obscurePassword = true;
+
   final Color primaryBlue = const Color(0xFF67BEE0);
   final Color accentOrange = const Color(0xFFFF8E00);
   final Color darkBlueText = const Color(0xFF2C6C85);
@@ -27,6 +31,11 @@ class _LoginPageState extends State<LoginPage> {
     if (!_formKey.currentState!.validate()) {
       return;
     }
+
+    // TAMBAHAN: Mulai loading
+    setState(() {
+      _isLoading = true;
+    });
 
     try {
       await FirebaseAuth.instance.signInWithEmailAndPassword(
@@ -43,15 +52,24 @@ class _LoginPageState extends State<LoginPage> {
       CustomSnackBar.show(context, errorMessage);
     } catch (e) {
       CustomSnackBar.show(context, "Error: $e");
+    } finally {
+      // TAMBAHAN: Hentikan loading apapun hasilnya
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+      }
     }
   }
 
-  InputDecoration _customInputDecoration(String label, IconData icon) {
+  // TAMBAHAN: Tambah parameter suffixIcon
+  InputDecoration _customInputDecoration(String label, IconData icon, {Widget? suffixIcon}) {
     return InputDecoration(
       labelText: label,
       labelStyle: GoogleFonts.quicksand(
           color: primaryBlue, fontWeight: FontWeight.bold),
       prefixIcon: Icon(icon, color: primaryBlue),
+      suffixIcon: suffixIcon, // TAMBAHAN
       filled: true,
       fillColor: Colors.blue.shade50.withOpacity(0.5),
       border: OutlineInputBorder(
@@ -79,16 +97,12 @@ class _LoginPageState extends State<LoginPage> {
       body: SafeArea(
         child: SingleChildScrollView(
           padding: const EdgeInsets.symmetric(horizontal: 24.0),
-          // BUNGKUS DENGAN FORM
           child: Form(
             key: _formKey,
             child: Column(
               children: [
-                // Ikon Login (Bisa diganti pakai gambar kalau punya asetnya)
                 Icon(Icons.lock_person_rounded, size: 100, color: accentOrange),
                 const SizedBox(height: 24),
-
-                // Judul
                 Text("Masuk",
                     style: GoogleFonts.nunito(
                         fontSize: 36,
@@ -105,11 +119,9 @@ class _LoginPageState extends State<LoginPage> {
                 ),
                 const SizedBox(height: 40),
 
-                // Form Email
                 TextFormField(
                   controller: _emailController,
-                  validator: AppValidator
-                      .validateEmail, 
+                  validator: AppValidator.validateEmail, 
                   keyboardType: TextInputType.emailAddress,
                   style: GoogleFonts.quicksand(
                       fontWeight: FontWeight.w600, color: darkBlueText),
@@ -118,40 +130,54 @@ class _LoginPageState extends State<LoginPage> {
                 ),
                 const SizedBox(height: 16),
 
-                // Form Password
+                // TAMBAHAN: obscureText pakai state & pasang IconButton mata
                 TextFormField(
                   controller: _passwordController,
                   validator: (value) => value == null || value.isEmpty
                       ? "Password tidak boleh kosong ya"
                       : null,
-                  obscureText: true,
+                  obscureText: _obscurePassword, // TAMBAHAN
                   style: GoogleFonts.quicksand(
                       fontWeight: FontWeight.w600, color: darkBlueText),
                   decoration: _customInputDecoration(
-                      "Password", Icons.lock_outline_rounded),
+                      "Password", 
+                      Icons.lock_outline_rounded,
+                      suffixIcon: IconButton( // TAMBAHAN
+                        icon: Icon(
+                          _obscurePassword ? Icons.visibility_off : Icons.visibility,
+                          color: primaryBlue,
+                        ),
+                        onPressed: () {
+                          setState(() {
+                            _obscurePassword = !_obscurePassword;
+                          });
+                        },
+                      ),
+                  ),
                 ),
                 const SizedBox(height: 40),
 
-                // Tombol Masuk
-                ElevatedButton(
-                  onPressed: _login,
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: primaryBlue,
-                    elevation: 4,
-                    shadowColor: primaryBlue.withOpacity(0.4),
-                    minimumSize: const Size(double.infinity, 56),
-                    shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(20)),
-                  ),
-                  child: Text("Masuk",
-                      style: GoogleFonts.nunito(
-                          fontSize: 20,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.white)),
-                ),
+                // TAMBAHAN: Tampilkan loading kalau _isLoading true
+                _isLoading
+                  ? CircularProgressIndicator(color: primaryBlue)
+                  : ElevatedButton(
+                      onPressed: _login,
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: primaryBlue,
+                        elevation: 4,
+                        shadowColor: primaryBlue.withOpacity(0.4),
+                        minimumSize: const Size(double.infinity, 56),
+                        shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(20)),
+                      ),
+                      child: Text("Masuk",
+                          style: GoogleFonts.nunito(
+                              fontSize: 20,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.white)),
+                    ),
                 const SizedBox(height: 16),
 
-                // Tombol Alternatif kalau belum punya akun
                 Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [

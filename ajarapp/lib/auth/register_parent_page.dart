@@ -13,10 +13,29 @@ class RegisterParentPage extends StatefulWidget {
   State<RegisterParentPage> createState() => _RegisterParentPageState();
 }
 
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
+
+import 'register_child_page.dart';
+import 'package:ajarapp/utils/auth_helper.dart';
+
+class RegisterParentPage extends StatefulWidget {
+  const RegisterParentPage({super.key});
+
+  @override
+  State<RegisterParentPage> createState() => _RegisterParentPageState();
+}
+
 class _RegisterParentPageState extends State<RegisterParentPage> {
   final _formKey = GlobalKey<FormState>(); 
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
+
+  // TAMBAHAN STATE UNTUK LOADING & PASSWORD
+  bool _isLoading = false;
+  bool _obscurePassword = true;
 
   final Color primaryBlue = const Color(0xFF67BEE0);
   final Color accentOrange = const Color(0xFFFF8E00);
@@ -27,6 +46,11 @@ class _RegisterParentPageState extends State<RegisterParentPage> {
     if (!_formKey.currentState!.validate()) {
       return; 
     }
+
+    // TAMBAHAN: Mulai loading
+    setState(() {
+      _isLoading = true;
+    });
 
     try {
       UserCredential userCredential = await FirebaseAuth.instance.createUserWithEmailAndPassword(
@@ -47,14 +71,23 @@ class _RegisterParentPageState extends State<RegisterParentPage> {
       CustomSnackBar.show(context, errorMessage);
     } catch (e) {
       CustomSnackBar.show(context, "Gagal: $e");
+    } finally {
+      // TAMBAHAN: Hentikan loading apapun hasilnya
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+      }
     }
   }
 
-  InputDecoration _customInputDecoration(String label, IconData icon) {
+  // TAMBAHAN: Tambah parameter suffixIcon
+  InputDecoration _customInputDecoration(String label, IconData icon, {Widget? suffixIcon}) {
     return InputDecoration(
       labelText: label,
       labelStyle: GoogleFonts.quicksand(color: primaryBlue, fontWeight: FontWeight.bold),
       prefixIcon: Icon(icon, color: primaryBlue),
+      suffixIcon: suffixIcon, // TAMBAHAN
       filled: true,
       fillColor: Colors.blue.shade50.withOpacity(0.5),
       border: OutlineInputBorder(
@@ -65,7 +98,6 @@ class _RegisterParentPageState extends State<RegisterParentPage> {
         borderRadius: BorderRadius.circular(16), 
         borderSide: BorderSide(color: primaryBlue, width: 2),
       ),
-      // Tambahan border saat error validasi muncul
       errorBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(16), 
         borderSide: const BorderSide(color: Colors.redAccent, width: 1.5),
@@ -89,13 +121,11 @@ class _RegisterParentPageState extends State<RegisterParentPage> {
       body: SafeArea(
         child: SingleChildScrollView(
           padding: const EdgeInsets.symmetric(horizontal: 24.0),
-          // BUNGKUS COLUMN DENGAN FORM
           child: Form(
             key: _formKey,
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.center,
               children: [
-                // Ornamen Gambar Induk & Anak Burung Hantu
                 Container(
                   height: 150,
                   margin: const EdgeInsets.only(bottom: 24),
@@ -107,8 +137,6 @@ class _RegisterParentPageState extends State<RegisterParentPage> {
                     },
                   ),
                 ),
-                
-                // Judul
                 Text(
                   "Akun Orang Tua",
                   style: GoogleFonts.nunito(
@@ -118,8 +146,6 @@ class _RegisterParentPageState extends State<RegisterParentPage> {
                   ),
                 ),
                 const SizedBox(height: 8),
-                
-                // Subjudul
                 Text(
                   "Buat akun untuk memantau perkembangan belajar anak.",
                   textAlign: TextAlign.center,
@@ -131,7 +157,6 @@ class _RegisterParentPageState extends State<RegisterParentPage> {
                 ),
                 const SizedBox(height: 40),
 
-                // Form Email (
                 TextFormField(
                   controller: _emailController,
                   validator: AppValidator.validateEmail, 
@@ -141,40 +166,57 @@ class _RegisterParentPageState extends State<RegisterParentPage> {
                 ),
                 const SizedBox(height: 16),
 
-                // Form Password 
+                // TAMBAHAN: obscureText pakai state & pasang IconButton mata
                 TextFormField(
                   controller: _passwordController,
                   validator: AppValidator.validatePassword, 
-                  obscureText: true,
+                  obscureText: _obscurePassword, 
                   style: GoogleFonts.quicksand(fontWeight: FontWeight.w600, color: darkBlueText),
-                  decoration: _customInputDecoration("Password", Icons.lock_outline_rounded).copyWith(
+                  decoration: _customInputDecoration(
+                    "Password", 
+                    Icons.lock_outline_rounded,
+                    suffixIcon: IconButton(
+                      icon: Icon(
+                        _obscurePassword ? Icons.visibility_off : Icons.visibility,
+                        color: primaryBlue,
+                      ),
+                      onPressed: () {
+                        setState(() {
+                          _obscurePassword = !_obscurePassword;
+                        });
+                      },
+                    ),
+                  ).copyWith(
                     helperText: "Min. 8 karakter, mencakup huruf kapital dan angka.",
                     helperMaxLines: 2,
                     helperStyle: GoogleFonts.quicksand(color: Colors.grey.shade600, fontWeight: FontWeight.w600),
                   ),
                 ),
+                const SizedBox(height: 40),
 
-                // Tombol Lanjut
-                ElevatedButton(
-                  onPressed: _registerParent,
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: accentOrange,
-                    foregroundColor: Colors.white,
-                    elevation: 4,
-                    shadowColor: accentOrange.withOpacity(0.4),
-                    minimumSize: const Size(double.infinity, 56),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(20),
+                // TAMBAHAN: Tampilkan loading kalau _isLoading true
+                _isLoading 
+                  ? CircularProgressIndicator(color: accentOrange)
+                  : ElevatedButton(
+                      onPressed: _registerParent,
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: accentOrange,
+                        foregroundColor: Colors.white,
+                        elevation: 4,
+                        shadowColor: accentOrange.withOpacity(0.4),
+                        minimumSize: const Size(double.infinity, 56),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(20),
+                        ),
+                      ),
+                      child: Text(
+                        "Lanjut Data Anak",
+                        style: GoogleFonts.nunito(
+                          fontSize: 20,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
                     ),
-                  ),
-                  child: Text(
-                    "Lanjut Data Anak",
-                    style: GoogleFonts.nunito(
-                      fontSize: 20,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                ),
                 const SizedBox(height: 20),
               ],
             ),
