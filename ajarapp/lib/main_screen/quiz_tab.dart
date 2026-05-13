@@ -1,10 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
+import '../quiz/quiz_config_page.dart';
+
 class QuizTab extends StatelessWidget {
   const QuizTab({super.key});
 
-  // Palet Warna Konsisten
   final Color primaryBlue = const Color(0xFF67BEE0);
   final Color accentOrange = const Color(0xFFFF8E00);
   final Color darkBlueText = const Color(0xFF2C6C85);
@@ -118,7 +119,14 @@ class QuizTab extends StatelessWidget {
                   title: "IPAS", 
                   icon: Icons.biotech_rounded, 
                   color: Colors.green.shade400,
-                  onTap: () {} // TODO: Arahkan ke list kuis IPAS
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => const QuizConfigPage(mapel: "IPAS"),
+                      ),
+                    );
+                  }
                 ),
               ],
             ),
