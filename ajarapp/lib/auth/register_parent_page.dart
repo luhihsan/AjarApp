@@ -13,21 +13,6 @@ class RegisterParentPage extends StatefulWidget {
   State<RegisterParentPage> createState() => _RegisterParentPageState();
 }
 
-import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:firebase_auth/firebase_auth.dart';
-import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
-
-import 'register_child_page.dart';
-import 'package:ajarapp/utils/auth_helper.dart';
-
-class RegisterParentPage extends StatefulWidget {
-  const RegisterParentPage({super.key});
-
-  @override
-  State<RegisterParentPage> createState() => _RegisterParentPageState();
-}
-
 class _RegisterParentPageState extends State<RegisterParentPage> {
   final _formKey = GlobalKey<FormState>(); 
   final _emailController = TextEditingController();

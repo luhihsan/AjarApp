@@ -81,17 +81,15 @@ class QuizTab extends StatelessWidget {
             ),
             const SizedBox(height: 32),
 
-            // 2. KUIS MAPEL DEFAULT
             Text(
               "Mata Pelajaran Utama", 
               style: GoogleFonts.nunito(fontSize: 18, fontWeight: FontWeight.w800, color: darkBlueText)
             ),
             const SizedBox(height: 16),
 
-            // GridView untuk 4 Mapel
-            GridView.count(
+           GridView.count(
               shrinkWrap: true,
-              physics: const NeverScrollableScrollPhysics(), // Biar ga bentrok sama SingleChildScrollView
+              physics: const NeverScrollableScrollPhysics(), 
               crossAxisCount: 2,
               crossAxisSpacing: 16,
               mainAxisSpacing: 16,
@@ -101,19 +99,40 @@ class QuizTab extends StatelessWidget {
                   title: "Matematika", 
                   icon: Icons.calculate_rounded, 
                   color: Colors.red.shade400,
-                  onTap: () {} // TODO: Arahkan ke list kuis MTK
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => const QuizConfigPage(mapel: "Matematika"),
+                      ),
+                    );
+                  } 
                 ),
                 _buildSubjectCard(
                   title: "Bahasa Indonesia", 
                   icon: Icons.menu_book_rounded, 
                   color: Colors.blue.shade400,
-                  onTap: () {} // TODO: Arahkan ke list kuis B.Indo
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => const QuizConfigPage(mapel: "Bahasa Indonesia"),
+                      ),
+                    );
+                  } 
                 ),
                 _buildSubjectCard(
                   title: "Bahasa Inggris", 
                   icon: Icons.abc_rounded, 
                   color: Colors.purple.shade400,
-                  onTap: () {} // TODO: Arahkan ke list kuis Inggris
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => const QuizConfigPage(mapel: "Bahasa Inggris"),
+                      ),
+                    );
+                  } 
                 ),
                 _buildSubjectCard(
                   title: "IPAS", 
