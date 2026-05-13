@@ -16,24 +16,28 @@ class _RegisterChildPageState extends State<RegisterChildPage> {
   
   String? _kelas;
   String? _semester;
-  String? _mapelFav;
+  
+  final List<String> _mapelFav = [];
 
   final List<String> _kelasList = ['1', '2', '3', '4', '5', '6'];
   final List<String> _semesterList = ['Ganjil', 'Genap'];
-  final List<String> _mapelList = ['Matematika', 'Bahasa Indonesia', 'Bahasa Inggris', 'IPA', 'IPS', 'PPKn'];
+  
+  // List mapel disesuaikan dengan kurikulum sekarang
+  final List<String> _mapelList = [
+    'Matematika', 'Bahasa Indonesia', 'IPAS', 
+    'Pend. Pancasila', 'Bahasa Inggris', 'Seni Budaya', 'PJOK'
+  ];
 
-  // Palet Warna
   final Color primaryBlue = const Color(0xFF67BEE0);
   final Color accentOrange = const Color(0xFFFF8E00);
   final Color darkBlueText = const Color(0xFF2C6C85);
   final Color bgColor = const Color(0xFFFDFDFD);
 
   Future<void> _simpanDataAnak() async {
-    // Validasi form tanpa kurikulum
     if (_namaLengkapController.text.isEmpty || _namaPanggilanController.text.isEmpty || 
-        _kelas == null || _semester == null || _mapelFav == null) {
+        _kelas == null || _semester == null || _mapelFav.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-        content: Text("Harap isi semua data ya!", style: GoogleFonts.quicksand()),
+        content: Text("Harap isi semua data & pilih minimal 1 mapel!", style: GoogleFonts.quicksand()),
         backgroundColor: accentOrange,
       ));
       return;
@@ -42,7 +46,6 @@ class _RegisterChildPageState extends State<RegisterChildPage> {
     try {
       String uidOrtu = FirebaseAuth.instance.currentUser!.uid;
 
-      // Simpan data tanpa kurikulum
       await FirebaseFirestore.instance
           .collection('users')
           .doc(uidOrtu)
@@ -53,6 +56,7 @@ class _RegisterChildPageState extends State<RegisterChildPage> {
         'kelas': _kelas,
         'semester': _semester,
         'mapel_fav': _mapelFav,
+        'last_updated_semester': DateTime.now(),
         'createdAt': DateTime.now(),
       });
 
@@ -60,9 +64,58 @@ class _RegisterChildPageState extends State<RegisterChildPage> {
         content: Text("Hore! Profil anak berhasil dibuat!", style: GoogleFonts.quicksand()),
         backgroundColor: Colors.green,
       ));
+      // TODO: Navigasi ke Dashboard
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(e.toString())));
     }
+  }
+
+  // Dialog untuk tambah mapel custom
+  Future<void> _tambahMapelCustom() async {
+    String newMapel = "";
+    return showDialog(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+          title: Text("Tambah Mata Pelajaran", style: GoogleFonts.nunito(color: darkBlueText, fontWeight: FontWeight.bold)),
+          content: TextField(
+            autofocus: true,
+            style: GoogleFonts.quicksand(fontWeight: FontWeight.w600, color: darkBlueText),
+            decoration: InputDecoration(
+              hintText: "Misal: Bahasa Jawa, Coding, dll",
+              hintStyle: GoogleFonts.quicksand(color: Colors.grey),
+              filled: true,
+              fillColor: Colors.blue.shade50.withOpacity(0.5),
+              border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
+            ),
+            onChanged: (value) => newMapel = value,
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: Text("Batal", style: GoogleFonts.nunito(color: Colors.grey, fontWeight: FontWeight.bold)),
+            ),
+            ElevatedButton(
+              onPressed: () {
+                if (newMapel.trim().isNotEmpty) {
+                  setState(() {
+                    _mapelList.add(newMapel.trim());
+                    _mapelFav.add(newMapel.trim()); // Otomatis terpilih
+                  });
+                }
+                Navigator.pop(context);
+              },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: accentOrange,
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+              ),
+              child: Text("Tambah", style: GoogleFonts.nunito(fontWeight: FontWeight.bold)),
+            ),
+          ],
+        );
+      },
+    );
   }
 
   InputDecoration _customInputDecoration(String label, IconData icon) {
@@ -101,28 +154,33 @@ class _RegisterChildPageState extends State<RegisterChildPage> {
         child: SingleChildScrollView(
           padding: const EdgeInsets.all(24.0),
           child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Container(
-                height: 120,
-                margin: const EdgeInsets.only(bottom: 24),
-                child: Image.asset(
-                  'lib/assets/baby_owl.png',
-                  fit: BoxFit.contain,
-                  errorBuilder: (context, error, stackTrace) {
-                    return Icon(Icons.face_retouching_natural_rounded, size: 90, color: accentOrange);
-                  },
+              Center(
+                child: Container(
+                  height: 120,
+                  margin: const EdgeInsets.only(bottom: 24),
+                  child: Image.asset(
+                    'lib/assets/baby_owl.png',
+                    fit: BoxFit.contain,
+                    errorBuilder: (context, error, stackTrace) => Icon(Icons.face_retouching_natural_rounded, size: 90, color: accentOrange),
+                  ),
                 ),
               ),
               
-              Text(
-                "Satu langkah lagi!",
-                style: GoogleFonts.nunito(fontSize: 24, fontWeight: FontWeight.w900, color: darkBlueText),
+              Center(
+                child: Text(
+                  "Satu langkah lagi!",
+                  style: GoogleFonts.nunito(fontSize: 24, fontWeight: FontWeight.w900, color: darkBlueText),
+                ),
               ),
               const SizedBox(height: 8),
-              Text(
-                "Biar kuisnya pas, isi data anak di bawah ini ya.",
-                textAlign: TextAlign.center,
-                style: GoogleFonts.quicksand(fontSize: 14, fontWeight: FontWeight.w600, color: Colors.grey.shade600),
+              Center(
+                child: Text(
+                  "Biar kuisnya pas, isi data anak di bawah ini ya.",
+                  textAlign: TextAlign.center,
+                  style: GoogleFonts.quicksand(fontSize: 14, fontWeight: FontWeight.w600, color: Colors.grey.shade600),
+                ),
               ),
               const SizedBox(height: 32),
 
@@ -165,15 +223,53 @@ class _RegisterChildPageState extends State<RegisterChildPage> {
                   ),
                 ],
               ),
-              const SizedBox(height: 16),
+              const SizedBox(height: 24),
 
-              DropdownButtonFormField<String>(
-                decoration: _customInputDecoration("Mata Pelajaran Favorit", Icons.star_border_rounded),
-                icon: Icon(Icons.keyboard_arrow_down_rounded, color: primaryBlue),
-                style: GoogleFonts.quicksand(fontWeight: FontWeight.w600, color: darkBlueText),
-                value: _mapelFav,
-                items: _mapelList.map((m) => DropdownMenuItem(value: m, child: Text(m))).toList(),
-                onChanged: (val) => setState(() => _mapelFav = val),
+              Text(
+                "Mata Pelajaran Favorit",
+                style: GoogleFonts.quicksand(fontWeight: FontWeight.bold, color: primaryBlue),
+              ),
+              const SizedBox(height: 12),
+              
+              // Widget WRAP dengan tambahan ActionChip custom
+              Wrap(
+                spacing: 8.0,
+                runSpacing: 4.0,
+                children: [
+                  ..._mapelList.map((mapel) {
+                    final isSelected = _mapelFav.contains(mapel);
+                    return FilterChip(
+                      label: Text(mapel, style: GoogleFonts.quicksand(fontWeight: FontWeight.w600)),
+                      labelStyle: TextStyle(color: isSelected ? Colors.white : darkBlueText),
+                      selected: isSelected,
+                      selectedColor: accentOrange,
+                      checkmarkColor: Colors.white,
+                      backgroundColor: Colors.blue.shade50.withOpacity(0.5),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                      side: BorderSide(color: isSelected ? accentOrange : Colors.transparent),
+                      onSelected: (bool selected) {
+                        setState(() {
+                          if (selected) {
+                            _mapelFav.add(mapel);
+                          } else {
+                            _mapelFav.remove(mapel);
+                          }
+                        });
+                      },
+                    );
+                  }).toList(),
+                  
+                  // Tombol Tambah Lainnya
+                  ActionChip(
+                    label: Text("+ Tambah", style: GoogleFonts.quicksand(fontWeight: FontWeight.bold, color: primaryBlue)),
+                    backgroundColor: bgColor,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    side: BorderSide(color: primaryBlue, width: 2, style: BorderStyle.solid),
+                    onPressed: _tambahMapelCustom,
+                  ),
+                ],
               ),
 
               const SizedBox(height: 40),
