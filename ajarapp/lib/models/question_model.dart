@@ -3,12 +3,14 @@ class QuestionModel {
   final List<String> options;
   final String correctAnswer;
   final String explanation;
+  String? userAnswer;
 
   QuestionModel({
     required this.question,
     required this.options,
     required this.correctAnswer,
     required this.explanation,
+    this.userAnswer,
   });
 
   factory QuestionModel.fromJson(Map<String, dynamic> json) {

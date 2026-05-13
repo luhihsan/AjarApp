@@ -66,6 +66,9 @@ class _QuizPlayPageState extends State<QuizPlayPage> {
   }
 
   void _nextQuestion() {
+    // Simpan jawaban user ke dalam model sebelum pindah
+    widget.questions[_currentIndex].userAnswer = _selectedAnswer;
+
     if (_selectedAnswer == widget.questions[_currentIndex].correctAnswer) {
       _score++;
     }
@@ -82,7 +85,6 @@ class _QuizPlayPageState extends State<QuizPlayPage> {
 
   void _cekJawabanLaluSelesai() {
     _timer.cancel();
-
     int finalScore = (_score / widget.questions.length * 100).round();
 
     Navigator.pushReplacement(
@@ -91,7 +93,9 @@ class _QuizPlayPageState extends State<QuizPlayPage> {
             builder: (_) => QuizResultPage(
                 score: finalScore,
                 totalQuestions: widget.questions.length,
-                correctAnswers: _score)));
+                correctAnswers: _score,
+                questions: widget.questions, // Kirim list soal ke Result
+            )));
   }
 
   Future<bool> _onWillPop() async {
