@@ -25,7 +25,7 @@ class AjarApp extends StatelessWidget {
     return MaterialApp(
       title: 'Ajar App',
       theme: ThemeData(primarySwatch: Colors.blue),
-      home: const LandingPage(), 
+      home: const MainScreen(), 
     );
   }
 }

@@ -181,10 +181,40 @@ class _QuizConfigPageState extends State<QuizConfigPage> {
             // Tombol Generate
             ElevatedButton(
               onPressed: () async {
-                showDialog(
+               showDialog(
                   context: context,
                   barrierDismissible: false,
-                  builder: (context) => const Center(child: CircularProgressIndicator(color: Colors.white)),
+                  builder: (context) => AlertDialog(
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+                    content: Column(
+                      mainAxisSize: MainAxisSize.min, // Agar dialog menyesuaikan tinggi konten
+                      children: [
+                        const SizedBox(height: 10),
+                        CircularProgressIndicator(color: primaryBlue),
+                        const SizedBox(height: 24),
+                        Text(
+                          "Sedang menyiapkan soal kuis...",
+                          textAlign: TextAlign.center,
+                          style: GoogleFonts.nunito(
+                            fontWeight: FontWeight.bold,
+                            color: darkBlueText,
+                            fontSize: 18,
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        Text(
+                          "AI kami sedang meracik soal terbaik untukmu. Tunggu sebentar ya!",
+                          textAlign: TextAlign.center,
+                          style: GoogleFonts.quicksand(
+                            fontSize: 14,
+                            color: Colors.grey.shade600,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                        const SizedBox(height: 10),
+                      ],
+                    ),
+                  ),
                 );
 
                 try {

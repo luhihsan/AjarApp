@@ -200,9 +200,6 @@ class _QuizPlayPageState extends State<QuizPlayPage> {
                         style: GoogleFonts.quicksand(
                             fontWeight: FontWeight.bold,
                             color: Colors.grey.shade600)),
-                    Text("${(_score)} Benar",
-                        style: GoogleFonts.quicksand(
-                            fontWeight: FontWeight.bold, color: accentOrange)),
                   ],
                 ),
                 const SizedBox(height: 12),
