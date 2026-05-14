@@ -4,7 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 import 'register_child_page.dart';
-import 'package:ajarapp/utils/auth_helper.dart';
+import 'package:ajarapp/utils/auth_helper.dart'; 
 
 class RegisterParentPage extends StatefulWidget {
   const RegisterParentPage({super.key});
@@ -18,7 +18,6 @@ class _RegisterParentPageState extends State<RegisterParentPage> {
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
 
-  // TAMBAHAN STATE UNTUK LOADING & PASSWORD
   bool _isLoading = false;
   bool _obscurePassword = true;
 
@@ -32,24 +31,33 @@ class _RegisterParentPageState extends State<RegisterParentPage> {
       return; 
     }
 
-    // TAMBAHAN: Mulai loading
     setState(() {
       _isLoading = true;
     });
 
     try {
+      // 1. Bikin akun Auth
       UserCredential userCredential = await FirebaseAuth.instance.createUserWithEmailAndPassword(
         email: _emailController.text.trim(),
         password: _passwordController.text.trim(),
       );
+      
+      // 2. Bikin dokumen Ortu di Firestore
       await FirebaseFirestore.instance.collection('users').doc(userCredential.user!.uid).set({
         'email': _emailController.text.trim(),
         'role': 'ortu',
         'createdAt': DateTime.now(),
       });
+      
+      // 3. Lempar UID Ortu ke halaman registrasi anak
       if (mounted) {
         CustomSnackBar.show(context, "Akun berhasil dibuat!", isError: false);
-        Navigator.pushReplacement(context, MaterialPageRoute(builder: (_) => const RegisterChildPage()));
+        Navigator.pushReplacement(
+          context, 
+          MaterialPageRoute(
+            builder: (_) => RegisterChildPage(uidOrtu: userCredential.user!.uid)
+          )
+        );
       }
     } on FirebaseAuthException catch (e) {
       String errorMessage = AuthExceptionHandler.getMessage(e);
@@ -57,7 +65,6 @@ class _RegisterParentPageState extends State<RegisterParentPage> {
     } catch (e) {
       CustomSnackBar.show(context, "Gagal: $e");
     } finally {
-      // TAMBAHAN: Hentikan loading apapun hasilnya
       if (mounted) {
         setState(() {
           _isLoading = false;
@@ -66,13 +73,12 @@ class _RegisterParentPageState extends State<RegisterParentPage> {
     }
   }
 
-  // TAMBAHAN: Tambah parameter suffixIcon
   InputDecoration _customInputDecoration(String label, IconData icon, {Widget? suffixIcon}) {
     return InputDecoration(
       labelText: label,
       labelStyle: GoogleFonts.quicksand(color: primaryBlue, fontWeight: FontWeight.bold),
       prefixIcon: Icon(icon, color: primaryBlue),
-      suffixIcon: suffixIcon, // TAMBAHAN
+      suffixIcon: suffixIcon,
       filled: true,
       fillColor: Colors.blue.shade50.withOpacity(0.5),
       border: OutlineInputBorder(
@@ -151,7 +157,6 @@ class _RegisterParentPageState extends State<RegisterParentPage> {
                 ),
                 const SizedBox(height: 16),
 
-                // TAMBAHAN: obscureText pakai state & pasang IconButton mata
                 TextFormField(
                   controller: _passwordController,
                   validator: AppValidator.validatePassword, 
@@ -179,7 +184,6 @@ class _RegisterParentPageState extends State<RegisterParentPage> {
                 ),
                 const SizedBox(height: 40),
 
-                // TAMBAHAN: Tampilkan loading kalau _isLoading true
                 _isLoading 
                   ? CircularProgressIndicator(color: accentOrange)
                   : ElevatedButton(

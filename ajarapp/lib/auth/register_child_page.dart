@@ -1,12 +1,14 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
-import 'package:ajarapp/auth/login_page.dart';
+import '../main_screen/main_screen.dart'; 
 
 class RegisterChildPage extends StatefulWidget {
-  const RegisterChildPage({super.key});
+  // Menerima UID Ortu dari halaman Register Ortu / Halaman Profil
+  final String uidOrtu; 
+  
+  const RegisterChildPage({super.key, required this.uidOrtu});
 
   @override
   State<RegisterChildPage> createState() => _RegisterChildPageState();
@@ -29,7 +31,6 @@ class _RegisterChildPageState extends State<RegisterChildPage> {
     'Pend. Pancasila', 'Bahasa Inggris', 'Seni Budaya', 'PJOK'
   ];
 
-  // TAMBAHAN STATE UNTUK LOADING
   bool _isLoading = false;
 
   final Color primaryBlue = const Color(0xFF67BEE0);
@@ -47,17 +48,15 @@ class _RegisterChildPageState extends State<RegisterChildPage> {
       return;
     }
 
-    // TAMBAHAN: Mulai loading setelah validasi lulus
     setState(() {
       _isLoading = true;
     });
 
     try {
-      String uidOrtu = FirebaseAuth.instance.currentUser!.uid;
-
+      // Menyimpan data anak ke sub-collection 'children' di bawah dokumen Ortu
       await FirebaseFirestore.instance
           .collection('users')
-          .doc(uidOrtu)
+          .doc(widget.uidOrtu) 
           .collection('children')
           .add({
         'nama_lengkap': _namaLengkapController.text.trim(),
@@ -65,25 +64,50 @@ class _RegisterChildPageState extends State<RegisterChildPage> {
         'kelas': _kelas,
         'semester': _semester,
         'mapel_fav': _mapelFav,
+        'xp': 0, // Set XP awal ke 0
         'last_updated_semester': DateTime.now(),
         'createdAt': DateTime.now(),
       });
 
-     ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-        content: Text("Hore! Profil anak berhasil dibuat! Silakan masuk.", style: GoogleFonts.quicksand()),
-        backgroundColor: Colors.green,
-      ));
-     if (mounted) {
-        Navigator.pushAndRemoveUntil(
-          context, 
-          MaterialPageRoute(builder: (_) => const LoginPage()),
-          (Route<dynamic> route) => false, 
+      if (mounted) {
+        showDialog(
+          context: context,
+          barrierDismissible: false,
+          builder: (context) => AlertDialog(
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+            title: Text("Berhasil!", style: GoogleFonts.nunito(fontWeight: FontWeight.bold, color: Colors.green)),
+            content: Text("Data profil anak berhasil disimpan. Mau nambah data anak lain atau langsung mulai belajar?", style: GoogleFonts.quicksand()),
+            actions: [
+              TextButton(
+                onPressed: () {
+                  Navigator.pop(context); // Tutup dialog
+                  // Refresh halaman dengan form kosong untuk nambah anak lagi
+                  Navigator.pushReplacement(
+                    context, 
+                    MaterialPageRoute(builder: (_) => RegisterChildPage(uidOrtu: widget.uidOrtu))
+                  );
+                },
+                child: Text("Tambah Anak Lain", style: GoogleFonts.nunito(fontWeight: FontWeight.bold, color: Colors.grey)),
+              ),
+              ElevatedButton(
+                onPressed: () {
+                  // Langsung masuk ke Dashboard
+                  Navigator.pushAndRemoveUntil(
+                    context,
+                    MaterialPageRoute(builder: (_) => const MainScreen()),
+                    (route) => false,
+                  );
+                },
+                style: ElevatedButton.styleFrom(backgroundColor: primaryBlue),
+                child: Text("Mulai Belajar", style: GoogleFonts.nunito(fontWeight: FontWeight.bold, color: Colors.white)),
+              ),
+            ],
+          ),
         );
       }
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(e.toString())));
     } finally {
-      // TAMBAHAN: Hentikan loading
       if (mounted) {
         setState(() {
           _isLoading = false;
@@ -292,7 +316,6 @@ class _RegisterChildPageState extends State<RegisterChildPage> {
               ),
               const SizedBox(height: 40),
 
-              // TAMBAHAN: Tampilkan loading kalau _isLoading true
               _isLoading 
                 ? Center(child: CircularProgressIndicator(color: primaryBlue))
                 : ElevatedButton(

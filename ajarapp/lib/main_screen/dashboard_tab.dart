@@ -4,8 +4,8 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 
 import '../services/user_service.dart';
-import '../quiz/quiz_config_page.dart'; // IMPORT BARU
-import 'history_page.dart'; // IMPORT BARU
+import '../quiz/quiz_config_page.dart'; 
+import 'history_page.dart'; 
 
 class DashboardTab extends StatefulWidget {
   const DashboardTab({super.key});

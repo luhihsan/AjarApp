@@ -3,6 +3,7 @@ import 'package:google_fonts/google_fonts.dart';
 
 import 'package:ajarapp/main_screen/dashboard_tab.dart';
 import 'package:ajarapp/main_screen/quiz_tab.dart';
+import 'package:ajarapp/main_screen/profile_tab.dart';
 
 class MainScreen extends StatefulWidget {
   const MainScreen({super.key});
@@ -21,7 +22,7 @@ class _MainScreenState extends State<MainScreen> {
   final List<Widget> _tabs = [
     const DashboardTab(), 
     const QuizTab(),    
-    const Placeholder(), 
+    const ProfileTab(),
   ];
 
   @override
