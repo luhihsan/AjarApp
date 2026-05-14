@@ -4,6 +4,8 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 
 import '../services/user_service.dart';
+import '../quiz/quiz_config_page.dart'; // IMPORT BARU
+import 'history_page.dart'; // IMPORT BARU
 
 class DashboardTab extends StatefulWidget {
   const DashboardTab({super.key});
@@ -51,7 +53,6 @@ class _DashboardTabState extends State<DashboardTab> {
       );
     }
 
-    // STREAM BUILDER 1: Mengambil Data Anak (XP, Level, Nama)
     return StreamBuilder<QuerySnapshot>(
       stream: FirebaseFirestore.instance
           .collection('users')
@@ -84,7 +85,6 @@ class _DashboardTabState extends State<DashboardTab> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // HEADER
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
@@ -107,19 +107,11 @@ class _DashboardTabState extends State<DashboardTab> {
                     ],
                   ),
                   const SizedBox(height: 32),
-
-                  // CARD LEVEL (GAMIFIKASI)
                   _buildLevelCard(level, xpProgress, xpNextLevel, progressPercent),
-                  
                   const SizedBox(height: 40),
-
-                  // SECTION RINGKASAN & RIWAYAT
                   Text("Ringkasan Belajarmu", style: GoogleFonts.nunito(fontSize: 20, fontWeight: FontWeight.w800, color: darkBlueText)),
                   const SizedBox(height: 16),
-                  
-                  // Panggil fungsi penarik history di sini
                   _buildStatisticsAndHistory(user.uid),
-                  
                   const SizedBox(height: 30),
                 ],
               ),
@@ -191,7 +183,6 @@ class _DashboardTabState extends State<DashboardTab> {
     );
   }
 
-  // --- STREAM BUILDER 2: Statistik & Riwayat Kuis ---
   Widget _buildStatisticsAndHistory(String uid) {
     return StreamBuilder<QuerySnapshot>(
       stream: FirebaseFirestore.instance
@@ -210,22 +201,37 @@ class _DashboardTabState extends State<DashboardTab> {
         }
 
         var docs = snapshot.data!.docs;
-        
-        // Kalkulasi Total dan Rata-rata
         int totalKuis = docs.length;
         int totalNilai = 0;
+        Map<String, List<int>> skorPerMapel = {};
+
         for (var doc in docs) {
-          totalNilai += (doc['score'] as num).toInt();
+          int s = (doc['score'] as num).toInt();
+          String m = doc['mapel'] ?? "Umum";
+          totalNilai += s;
+          if (skorPerMapel.containsKey(m)) {
+            skorPerMapel[m]!.add(s);
+          } else {
+            skorPerMapel[m] = [s];
+          }
         }
         int avgNilai = (totalNilai / totalKuis).round();
 
-        // Ambil 3 data paling baru
+        String mapelTerlemah = "";
+        double rataRataTerendah = 100.0;
+        skorPerMapel.forEach((mapel, daftarNilai) {
+          double avgMapel = daftarNilai.reduce((a, b) => a + b) / daftarNilai.length;
+          if (avgMapel < rataRataTerendah) {
+            rataRataTerendah = avgMapel;
+            mapelTerlemah = mapel;
+          }
+        });
+
         var recentDocs = docs.take(3).toList();
 
         return Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // KOTAK METRIK
             Row(
               children: [
                 _buildMetricCard("Total Kuis", "$totalKuis", Icons.assignment_turned_in_rounded, Colors.purple.shade400),
@@ -234,22 +240,73 @@ class _DashboardTabState extends State<DashboardTab> {
               ],
             ),
             const SizedBox(height: 32),
-
-            // RIWAYAT TERAKHIR
+            if (mapelTerlemah.isNotEmpty) ...[
+              _buildRadarCard(mapelTerlemah, rataRataTerendah.round()), // SUDAH DIPERBAIKI
+              const SizedBox(height: 32),
+            ],
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 Text("Riwayat Terakhir", style: GoogleFonts.nunito(fontSize: 18, fontWeight: FontWeight.bold, color: darkBlueText)),
-                Text("Lihat Semua", style: GoogleFonts.quicksand(fontWeight: FontWeight.bold, color: accentOrange)),
+                GestureDetector(
+                  onTap: () {
+                    Navigator.push(context, MaterialPageRoute(builder: (_) => const HistoryPage()));
+                  },
+                  child: Text("Lihat Semua", style: GoogleFonts.quicksand(fontWeight: FontWeight.bold, color: accentOrange)),
+                ),
               ],
             ),
             const SizedBox(height: 12),
-            
-            // LIST ITEM RIWAYAT
             ...recentDocs.map((doc) => _buildHistoryItem(doc)).toList(),
           ],
         );
       },
+    );
+  }
+
+  Widget _buildRadarCard(String mapel, int nilaiAvg) {
+    bool isDanger = nilaiAvg < 70;
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: isDanger ? Colors.red.shade50 : Colors.blue.shade50,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: isDanger ? Colors.red.shade200 : Colors.blue.shade200, width: 2),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(Icons.smart_toy_rounded, color: isDanger ? Colors.red.shade400 : primaryBlue),
+              const SizedBox(width: 8),
+              Text("Analisis Guru AI", style: GoogleFonts.nunito(fontSize: 16, fontWeight: FontWeight.w900, color: darkBlueText)),
+            ],
+          ),
+          const SizedBox(height: 12),
+          Text(
+            isDanger 
+              ? "Waduh, rata-rata nilai $mapel kamu masih $nilaiAvg nih. Yuk, kita perbanyak latihan di materi ini biar nilainya naik!"
+              : "Hebat! Kamu paling butuh penguatan sedikit lagi di $mapel (Rata-rata: $nilaiAvg). Gas kuis lagi!",
+            style: GoogleFonts.quicksand(fontSize: 15, fontWeight: FontWeight.w600, color: Colors.grey.shade800),
+          ),
+          const SizedBox(height: 16),
+          ElevatedButton(
+            onPressed: () {
+              // NAVIGASI LANGSUNG KE PENGATURAN KUIS MAPEL TERSEBUT
+              Navigator.push(context, MaterialPageRoute(builder: (_) => QuizConfigPage(mapel: mapel)));
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: isDanger ? Colors.redAccent : primaryBlue,
+              foregroundColor: Colors.white,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              elevation: 0,
+            ),
+            child: Text("Latihan $mapel Sekarang", style: GoogleFonts.nunito(fontWeight: FontWeight.bold)),
+          )
+        ],
+      ),
     );
   }
 
@@ -280,7 +337,6 @@ class _DashboardTabState extends State<DashboardTab> {
     String mapel = data['mapel'] ?? "Kuis";
     int score = data['score'] ?? 0;
     DateTime tgl = (data['tanggal'] as Timestamp).toDate();
-    
     String formattedDate = "${tgl.day}/${tgl.month}/${tgl.year}";
     bool isPassed = score >= 70;
 
@@ -301,10 +357,7 @@ class _DashboardTabState extends State<DashboardTab> {
               color: isPassed ? Colors.green.shade50 : Colors.red.shade50,
               shape: BoxShape.circle,
             ),
-            child: Icon(
-              isPassed ? Icons.check_circle_rounded : Icons.cancel_rounded, 
-              color: isPassed ? Colors.green : Colors.redAccent,
-            ),
+            child: Icon(isPassed ? Icons.check_circle_rounded : Icons.cancel_rounded, color: isPassed ? Colors.green : Colors.redAccent),
           ),
           const SizedBox(width: 16),
           Expanded(
@@ -316,10 +369,7 @@ class _DashboardTabState extends State<DashboardTab> {
               ],
             ),
           ),
-          Text(
-            "$score", 
-            style: GoogleFonts.nunito(fontSize: 20, fontWeight: FontWeight.w900, color: isPassed ? Colors.green : Colors.redAccent),
-          ),
+          Text("$score", style: GoogleFonts.nunito(fontSize: 20, fontWeight: FontWeight.w900, color: isPassed ? Colors.green : Colors.redAccent)),
         ],
       ),
     );
@@ -332,7 +382,7 @@ class _DashboardTabState extends State<DashboardTab> {
       decoration: BoxDecoration(
         color: Colors.blue.shade50.withOpacity(0.5),
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: primaryBlue.withOpacity(0.1), style: BorderStyle.solid),
+        border: Border.all(color: primaryBlue.withOpacity(0.1)),
       ),
       child: Column(
         children: [
