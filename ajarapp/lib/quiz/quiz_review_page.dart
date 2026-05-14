@@ -103,7 +103,7 @@ class _QuizReviewPageState extends State<QuizReviewPage> {
               itemCount: widget.questions.length,
               itemBuilder: (context, index) {
                 final q = widget.questions[index];
-                bool isCorrect = q.userAnswer == q.correctAnswer;
+                bool isPassed = q.earnedScore >= 70; 
 
                 return Container(
                   margin: const EdgeInsets.only(bottom: 20),
@@ -111,21 +111,41 @@ class _QuizReviewPageState extends State<QuizReviewPage> {
                   decoration: BoxDecoration(
                     color: Colors.white,
                     borderRadius: BorderRadius.circular(16),
-                    border: Border.all(color: isCorrect ? Colors.green.shade100 : Colors.red.shade100, width: 2),
+                    border: Border.all(color: isPassed ? Colors.green.shade100 : Colors.red.shade100, width: 2),
                   ),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text("Soal ${index + 1}", style: GoogleFonts.quicksand(fontWeight: FontWeight.bold, color: Colors.grey)),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Text("Soal ${index + 1} (${q.type == 'mcq' ? 'Pilihan Ganda' : 'Esai'})", style: GoogleFonts.quicksand(fontWeight: FontWeight.bold, color: Colors.grey)),
+                          Text("Nilai: ${q.earnedScore}/100", style: GoogleFonts.nunito(fontWeight: FontWeight.w900, color: isPassed ? Colors.green : Colors.red)),
+                        ],
+                      ),
                       const SizedBox(height: 8),
                       Text(q.question, style: GoogleFonts.nunito(fontSize: 16, fontWeight: FontWeight.bold, color: darkBlueText)),
                       const SizedBox(height: 16),
-                      _buildInfoRow("Jawaban Kamu:", q.userAnswer ?? "-", isCorrect ? Colors.green : Colors.red),
-                      if (!isCorrect) _buildInfoRow("Jawaban Benar:", q.correctAnswer, Colors.green),
+                      
+                      _buildInfoRow("Jawaban Kamu:", q.userAnswer ?? "Kosong", isPassed ? Colors.green : Colors.red),
+                      _buildInfoRow("Kunci Jawaban:", q.correctAnswer, Colors.green),
+                      
                       const SizedBox(height: 12),
                       const Divider(),
-                      Text("Penjelasan:", style: GoogleFonts.quicksand(fontWeight: FontWeight.bold, color: primaryBlue)),
-                      Text(q.explanation, style: GoogleFonts.quicksand(fontSize: 14, color: Colors.grey.shade700)),
+                      
+                      // TAMPILAN FEEDBACK AI PER SOAL
+                      Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Icon(Icons.mark_chat_read_rounded, size: 18, color: accentOrange),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: Text(q.aiFeedback, style: GoogleFonts.quicksand(fontSize: 14, fontWeight: FontWeight.bold, color: accentOrange)),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 8),
+                      Text("Penjelasan Materi: ${q.explanation}", style: GoogleFonts.quicksand(fontSize: 14, color: Colors.grey.shade700)),
                     ],
                   ),
                 );

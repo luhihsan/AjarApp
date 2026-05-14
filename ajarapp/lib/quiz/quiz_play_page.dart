@@ -4,6 +4,7 @@ import 'package:google_fonts/google_fonts.dart';
 
 import '../models/question_model.dart';
 import 'quiz_result_page.dart';
+import '../services/gemini_service.dart';
 
 class QuizPlayPage extends StatefulWidget {
   final List<QuestionModel> questions;
@@ -85,22 +86,61 @@ class _QuizPlayPageState extends State<QuizPlayPage> {
     }
   }
 
-  void _cekJawabanLaluSelesai() {
+  Future<void> _cekJawabanLaluSelesai() async {
     _timer.cancel();
 
-    // Sementara ngitung skor dari MCQ aja. 
-    // Skor final + esai akan disempurnakan di integrasi AI koreksi nanti
-    int finalScore = (_score / widget.questions.length * 100).round();
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const SizedBox(height: 10),
+            CircularProgressIndicator(color: primaryBlue),
+            const SizedBox(height: 24),
+            Text("Mengoreksi Jawaban...", textAlign: TextAlign.center, style: GoogleFonts.nunito(fontWeight: FontWeight.bold, color: darkBlueText, fontSize: 18)),
+            const SizedBox(height: 8),
+            Text("Guru AI sedang memeriksa ketepatan esai dan pilihan gandamu. Tunggu ya!", textAlign: TextAlign.center, style: GoogleFonts.quicksand(fontSize: 14, color: Colors.grey.shade600, fontWeight: FontWeight.w600)),
+            const SizedBox(height: 10),
+          ],
+        ),
+      ),
+    );
 
-    Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(
-            builder: (_) => QuizResultPage(
-                score: finalScore,
-                totalQuestions: widget.questions.length,
-                correctAnswers: _score,
-                questions: widget.questions, 
-            )));
+    try {
+      await GeminiService.koreksiKuisByAI(widget.questions);
+
+      int totalEarned = 0;
+      int countBenar = 0;
+      
+      for (var q in widget.questions) {
+        totalEarned += q.earnedScore;
+        if (q.earnedScore >= 70) {
+          countBenar++; 
+        }
+      }
+      
+      int finalScore = (totalEarned / widget.questions.length).round();
+
+      if (context.mounted) Navigator.pop(context); 
+
+      if (context.mounted) {
+        Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(
+                builder: (_) => QuizResultPage(
+                      score: finalScore,
+                      totalQuestions: widget.questions.length,
+                      correctAnswers: countBenar,
+                      questions: widget.questions,
+                    )));
+      }
+    } catch (e) {
+      if (context.mounted) Navigator.pop(context);
+      if (context.mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("Aduh gagal dikoreksi: $e"), backgroundColor: Colors.red));
+    }
   }
 
   Future<bool> _onWillPop() async {

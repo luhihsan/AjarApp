@@ -22,7 +22,7 @@ class GeminiService {
     }
     
     final model = GenerativeModel(
-      model: 'gemini-2.5-flash',
+      model: 'gemini-3.1-flash-lite',
       apiKey: _apiKey,
     );
 
@@ -113,13 +113,13 @@ class GeminiService {
     static Future<String> generateEvaluation({
     required List<QuestionModel> questions,
     required int score,
-  }) async {
-    if (_apiKey.isEmpty) {
-      return "Evaluasi tidak tersedia (API Key kosong).";
-    }
+    }) async {
+      if (_apiKey.isEmpty) {
+        return "Evaluasi tidak tersedia (API Key kosong).";
+      }
 
     final model = GenerativeModel(
-      model: 'gemini-2.5-flash', 
+      model: 'gemini-3.1-flash-lite', 
       apiKey: _apiKey,
     );
 
@@ -148,6 +148,65 @@ class GeminiService {
       return response.text?.trim() ?? "Tetap semangat dan rajin berlatih ya!";
     } catch (e) {
       return "Wah, koneksi ke ruang guru sedang terputus. Tetap semangat belajarnya ya!";
+    }
+
+  }
+
+  static Future<void> koreksiKuisByAI(List<QuestionModel> questions) async {
+    if (_apiKey.isEmpty) throw Exception("API Key tidak ditemukan.");
+    final model = GenerativeModel(model: 'gemini-3.1-flash-lite', apiKey: _apiKey);
+
+    String dataKuis = "";
+    for (int i = 0; i < questions.length; i++) {
+      var q = questions[i];
+      dataKuis += "Soal ${i + 1}:\n";
+      dataKuis += "Tipe: ${q.type}\n";
+      dataKuis += "Pertanyaan: ${q.question}\n";
+      dataKuis += "Kunci Jawaban Seharusnya: ${q.correctAnswer}\n";
+      dataKuis += "Jawaban Murid: ${q.userAnswer ?? 'Tidak dijawab'}\n\n";
+    }
+
+    final prompt = '''
+      Kamu adalah guru pengoreksi ujian yang objektif. 
+      Berikut adalah data soal, kunci jawaban, dan jawaban dari murid:
+      
+      $dataKuis
+
+      Tugasmu:
+      1. Koreksi setiap soal secara berurutan.
+      2. Untuk soal "mcq" (Pilihan Ganda), berikan nilai 100 jika jawaban murid SAMA PERSIS dengan kunci. Berikan 0 jika salah.
+      3. Untuk soal "essay" (Isian), EVALUASI SECARA SEMANTIK. Jangan kaku pada kecocokan kata persis. Jika maknanya benar atau mendekati, berikan nilai (misal 50, 75, 85, 100). Jika melenceng jauh, berikan 0.
+      4. Berikan pesan evaluasi 1 kalimat pendek untuk tiap soal (contoh: "Tepat sekali!", atau "Hampir benar, harusnya ditambah kata oksigen.").
+      5. Kembalikan HANYA format array JSON yang valid tanpa awalan/akhiran text, tanpa markdown ```json.
+      
+      Contoh Format Balasan:
+      [
+        {
+          "score": 100,
+          "feedback": "Jawabanmu tepat sekali!"
+        },
+        {
+          "score": 60,
+          "feedback": "Hampir benar, tapi fungsinya kurang lengkap."
+        }
+      ]
+    ''';
+
+    try {
+      final response = await model.generateContent([Content.text(prompt)]);
+      final String responseText = response.text ?? '[]';
+      final cleanedText = responseText.replaceAll('```json', '').replaceAll('```', '').trim();
+      final List<dynamic> jsonList = jsonDecode(cleanedText);
+
+      // 3. Masukkan hasil nilai dan feedback AI kembali ke model
+      for (int i = 0; i < questions.length; i++) {
+        if (i < jsonList.length) {
+          questions[i].earnedScore = jsonList[i]['score'] ?? 0;
+          questions[i].aiFeedback = jsonList[i]['feedback'] ?? "";
+        }
+      }
+    } catch (e) {
+      throw Exception("Gagal mengoreksi kuis: $e");
     }
   }
 }
