@@ -28,6 +28,7 @@ class UserService {
     required String mapel,
     required int score,
     required List<QuestionModel> questions,
+    required String childName,
     required String kesulitan,
     required int waktuMenit,
   }) async {
@@ -62,6 +63,7 @@ class UserService {
       'score': score,
       'xp_earned': finalXpEarned,
       'kesulitan': kesulitan,
+      'child_name': childName,
       'tanggal': DateTime.now(),
       'jumlah_soal': jumlahSoal,
     });
