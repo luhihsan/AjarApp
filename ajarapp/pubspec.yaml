@@ -71,6 +71,7 @@ flutter:
     - lib/assets/logo.png
     - lib/assets/parent_owl.png
     - lib/assets/baby_owl.png
+    - lib/assets/logo_google.png
     - .env
 
   # To add assets to your application, add an assets section, like this:
