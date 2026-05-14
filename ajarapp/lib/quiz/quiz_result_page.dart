@@ -1,3 +1,4 @@
+import 'package:ajarapp/main_screen/main_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
@@ -8,6 +9,7 @@ class QuizResultPage extends StatelessWidget {
   final int score;
   final int totalQuestions;
   final int correctAnswers;
+  final int xpEarned;
   final List<QuestionModel> questions; 
 
   const QuizResultPage({
@@ -16,6 +18,7 @@ class QuizResultPage extends StatelessWidget {
     required this.totalQuestions, 
     required this.correctAnswers,
     required this.questions,
+    required this.xpEarned,
   });
 
   @override
@@ -72,7 +75,6 @@ class QuizResultPage extends StatelessWidget {
               ),
               const SizedBox(height: 16),
 
-              // TAMBAHAN: BADGE XP EARNED
               Center(
                 child: Container(
                   padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 24),
@@ -86,7 +88,7 @@ class QuizResultPage extends StatelessWidget {
                     children: [
                       const Text("🔥", style: TextStyle(fontSize: 24)),
                       const SizedBox(width: 8),
-                      Text("+$score XP", style: GoogleFonts.nunito(fontSize: 20, fontWeight: FontWeight.w900, color: accentOrange)),
+                      Text("+$xpEarned XP", style: GoogleFonts.nunito(fontSize: 20, fontWeight: FontWeight.w900, color: accentOrange)),
                     ],
                   ),
                 ),
@@ -118,7 +120,11 @@ class QuizResultPage extends StatelessWidget {
 
               ElevatedButton(
                 onPressed: () {
-                  Navigator.of(context).popUntil((route) => route.isFirst);
+                  Navigator.pushAndRemoveUntil(
+                    context,
+                    MaterialPageRoute(builder: (_) => const MainScreen()),
+                    (route) => false, // Hapus semua tumpukan layar sebelumnya
+                  );
                 },
                 style: ElevatedButton.styleFrom(
                   backgroundColor: accentOrange,
@@ -128,6 +134,7 @@ class QuizResultPage extends StatelessWidget {
                 ),
                 child: Text("Kembali ke Beranda", style: GoogleFonts.nunito(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.white)),
               )
+              
             ],
           ),
         ),

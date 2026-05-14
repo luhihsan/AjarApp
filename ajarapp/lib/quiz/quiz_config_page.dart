@@ -288,10 +288,13 @@ class _QuizConfigPageState extends State<QuizConfigPage> {
                       context, 
                       MaterialPageRoute(builder: (_) => QuizPlayPage(
                         questions: generatedQuestions, 
-                        waktuMenit: _waktuMenit
+                        waktuMenit: _waktuMenit,
+                        mapel: widget.mapel, 
+                        kesulitan: _kesulitan, 
                       ))
                     );
                   }
+
                 } catch (e) {
                   if (context.mounted) {
                     Navigator.pop(context);

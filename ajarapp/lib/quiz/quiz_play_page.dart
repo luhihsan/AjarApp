@@ -10,11 +10,15 @@ import '../services/user_service.dart';
 class QuizPlayPage extends StatefulWidget {
   final List<QuestionModel> questions;
   final int waktuMenit;
+  final String mapel;      
+  final String kesulitan;
 
   const QuizPlayPage({
     super.key,
     required this.questions,
     required this.waktuMenit,
+    required this.mapel,     
+    required this.kesulitan,
   });
 
   @override
@@ -120,12 +124,13 @@ class _QuizPlayPageState extends State<QuizPlayPage> {
       }
       int finalScore = (totalEarned / widget.questions.length).round();
 
-      await UserService.saveQuizResult(
-        mapel: "Latihan", 
+      int xpYangDidapat = await UserService.saveQuizResult(
+        mapel: widget.mapel,
         score: finalScore,
         questions: widget.questions,
+        kesulitan: widget.kesulitan,
+        waktuMenit: widget.waktuMenit,
       );
-      // ------------------------------------
 
       if (context.mounted) Navigator.pop(context);
 
@@ -138,6 +143,21 @@ class _QuizPlayPageState extends State<QuizPlayPage> {
                       totalQuestions: widget.questions.length,
                       correctAnswers: countBenar,
                       questions: widget.questions,
+                      xpEarned: xpYangDidapat, 
+                    )));
+      }
+      if (context.mounted) Navigator.pop(context);
+
+      if (context.mounted) {
+        Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(
+                builder: (_) => QuizResultPage(
+                      score: finalScore,
+                      totalQuestions: widget.questions.length,
+                      correctAnswers: countBenar,
+                      questions: widget.questions,
+                      xpEarned: xpYangDidapat,
                     )));
       }
     } catch (e) {
