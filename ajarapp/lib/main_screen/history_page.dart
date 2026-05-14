@@ -4,7 +4,17 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 
 class HistoryPage extends StatelessWidget {
-  const HistoryPage({super.key});
+  // PARAMETER BARU UNTUK FILTER ANAK AKTIF
+  final String childName;
+  final String childId;
+  final bool isFirstChild;
+
+  const HistoryPage({
+    super.key, 
+    required this.childName, 
+    required this.childId, 
+    required this.isFirstChild
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -27,26 +37,31 @@ class HistoryPage extends StatelessWidget {
             .collection('users')
             .doc(user.uid)
             .collection('history')
-            .orderBy('tanggal', descending: true) // Urutkan dari yang terbaru
+            .orderBy('tanggal', descending: true)
             .snapshots(),
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
             return Center(child: CircularProgressIndicator(color: primaryBlue));
           }
           if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
-            return Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Icon(Icons.history_rounded, size: 80, color: Colors.grey.shade300),
-                  const SizedBox(height: 16),
-                  Text("Belum ada riwayat kuis nih.", style: GoogleFonts.quicksand(color: Colors.grey)),
-                ],
-              ),
-            );
+            return _buildEmptyState();
           }
 
-          var docs = snapshot.data!.docs;
+          var allDocs = snapshot.data!.docs;
+          
+          // FILTER IN-MEMORY SAMA SEPERTI DI DASHBOARD
+          var docs = allDocs.where((doc) {
+             var data = doc.data() as Map<String, dynamic>;
+             bool matchId = data['child_id'] == childId;
+             bool matchName = data['child_name'] == childName;
+             bool isLegacyData = data['child_id'] == null && data['child_name'] == null;
+             
+             return matchId || matchName || (isLegacyData && isFirstChild);
+          }).toList();
+
+          if (docs.isEmpty) {
+            return _buildEmptyState();
+          }
 
           return ListView.builder(
             padding: const EdgeInsets.all(24),
@@ -56,6 +71,19 @@ class HistoryPage extends StatelessWidget {
             },
           );
         },
+      ),
+    );
+  }
+
+  Widget _buildEmptyState() {
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(Icons.history_rounded, size: 80, color: Colors.grey.shade300),
+          const SizedBox(height: 16),
+          Text("Belum ada riwayat kuis nih.", style: GoogleFonts.quicksand(color: Colors.grey, fontWeight: FontWeight.bold)),
+        ],
       ),
     );
   }

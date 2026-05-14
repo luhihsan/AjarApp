@@ -47,76 +47,83 @@ class _DashboardTabState extends State<DashboardTab> {
   Widget build(BuildContext context) {
     User? user = FirebaseAuth.instance.currentUser;
     if (user == null || _isLoadingStreak) {
-      return Scaffold(
-        backgroundColor: bgColor,
-        body: Center(child: CircularProgressIndicator(color: primaryBlue)),
-      );
+      return Scaffold(backgroundColor: bgColor, body: Center(child: CircularProgressIndicator(color: primaryBlue)));
     }
 
-    return StreamBuilder<QuerySnapshot>(
-      stream: FirebaseFirestore.instance
-          .collection('users')
-          .doc(user.uid)
-          .collection('children')
-          .limit(1)
-          .snapshots(),
-      builder: (context, snapshot) {
-        if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
-          return Scaffold(
-            backgroundColor: bgColor,
-            body: Center(child: CircularProgressIndicator(color: primaryBlue)),
-          );
-        }
+    return StreamBuilder<DocumentSnapshot>(
+      stream: FirebaseFirestore.instance.collection('users').doc(user.uid).snapshots(),
+      builder: (context, parentSnap) {
+        if (!parentSnap.hasData) return Scaffold(backgroundColor: bgColor, body: Center(child: CircularProgressIndicator(color: primaryBlue)));
+        String? activeId = (parentSnap.data!.data() as Map<String, dynamic>?)?['active_child_id'];
 
-        var data = snapshot.data!.docs.first.data() as Map<String, dynamic>;
-        String namaAnak = data['nama_panggilan'] ?? "Jagoan";
-        int xp = data['xp'] ?? 0;
-        int level = (xp ~/ 100) + 1;
+        return StreamBuilder<QuerySnapshot>(
+          // FIX FATAL BUG: Tambahkan orderBy createdAt
+          stream: FirebaseFirestore.instance.collection('users').doc(user.uid).collection('children').orderBy('createdAt').snapshots(),
+          builder: (context, childrenSnap) {
+            if (!childrenSnap.hasData || childrenSnap.data!.docs.isEmpty) {
+              return Scaffold(backgroundColor: bgColor, body: Center(child: CircularProgressIndicator(color: primaryBlue)));
+            }
 
-        int xpNextLevel = 100;
-        int xpProgress = xp % xpNextLevel;
-        double progressPercent = xpProgress / xpNextLevel;
+            var childrenDocs = childrenSnap.data!.docs;
+            QueryDocumentSnapshot activeChildDoc;
+            
+            try {
+              activeChildDoc = activeId != null ? childrenDocs.firstWhere((d) => d.id == activeId) : childrenDocs.first;
+            } catch (e) {
+              activeChildDoc = childrenDocs.first;
+            }
 
-        return Scaffold(
-          backgroundColor: bgColor,
-          body: SafeArea(
-            child: SingleChildScrollView(
-              padding: const EdgeInsets.all(24.0),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            var data = activeChildDoc.data() as Map<String, dynamic>;
+            String namaAnak = data['nama_panggilan'] ?? "Jagoan";
+            String childId = activeChildDoc.id;
+            
+            // LOGIC AMAN: Karena diurutkan, childrenDocs.first.id PASTI anak pertama yang diregister
+            bool isFirstChild = childId == childrenDocs.first.id;
+            
+            int totalXp = data['xp'] ?? 0;
+            var levelInfo = UserService.calculateLevelInfo(totalXp);
+            
+            int level = levelInfo['level']!;
+            int currentXp = levelInfo['currentXp']!;
+            int targetXp = levelInfo['targetXp']!;
+            double progressPercent = currentXp / targetXp;
+
+            return Scaffold(
+              backgroundColor: bgColor,
+              body: SafeArea(
+                child: SingleChildScrollView(
+                  padding: const EdgeInsets.all(24.0),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              "Halo, $namaAnak! 👋", 
-                              style: GoogleFonts.nunito(fontSize: 28, fontWeight: FontWeight.w900, color: darkBlueText),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text("Halo, $namaAnak! 👋", style: GoogleFonts.nunito(fontSize: 28, fontWeight: FontWeight.w900, color: darkBlueText)),
+                                Text("Mau belajar apa hari ini?", style: GoogleFonts.quicksand(fontSize: 16, fontWeight: FontWeight.w600, color: Colors.grey.shade600)),
+                              ],
                             ),
-                            Text(
-                              "Mau belajar apa hari ini?",
-                              style: GoogleFonts.quicksand(fontSize: 16, fontWeight: FontWeight.w600, color: Colors.grey.shade600),
-                            ),
-                          ],
-                        ),
+                          ),
+                          _buildStreakIcon(),
+                        ],
                       ),
-                      _buildStreakIcon(),
+                      const SizedBox(height: 32),
+                      _buildLevelCard(level, currentXp, targetXp, progressPercent),
+                      const SizedBox(height: 40),
+                      Text("Ringkasan Belajarmu", style: GoogleFonts.nunito(fontSize: 20, fontWeight: FontWeight.w800, color: darkBlueText)),
+                      const SizedBox(height: 16),
+                      _buildStatisticsAndHistory(user.uid, namaAnak, childId, isFirstChild), 
+                      const SizedBox(height: 30),
                     ],
                   ),
-                  const SizedBox(height: 32),
-                  _buildLevelCard(level, xpProgress, xpNextLevel, progressPercent),
-                  const SizedBox(height: 40),
-                  Text("Ringkasan Belajarmu", style: GoogleFonts.nunito(fontSize: 20, fontWeight: FontWeight.w800, color: darkBlueText)),
-                  const SizedBox(height: 16),
-                  _buildStatisticsAndHistory(user.uid),
-                  const SizedBox(height: 30),
-                ],
+                ),
               ),
-            ),
-          ),
+            );
+          },
         );
       },
     );
@@ -125,11 +132,7 @@ class _DashboardTabState extends State<DashboardTab> {
   Widget _buildStreakIcon() {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-      decoration: BoxDecoration(
-        color: Colors.orange.shade50,
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: accentOrange.withOpacity(0.3)),
-      ),
+      decoration: BoxDecoration(color: Colors.orange.shade50, borderRadius: BorderRadius.circular(20), border: Border.all(color: accentOrange.withOpacity(0.3))),
       child: Row(
         children: [
           const Text("🔥", style: TextStyle(fontSize: 20)),
@@ -150,11 +153,7 @@ class _DashboardTabState extends State<DashboardTab> {
       ),
       child: Row(
         children: [
-          CircleAvatar(
-            radius: 35,
-            backgroundColor: Colors.white,
-            child: Text("Lvl $level", style: GoogleFonts.nunito(fontSize: 18, fontWeight: FontWeight.w900, color: accentOrange)),
-          ),
+          CircleAvatar(radius: 35, backgroundColor: Colors.white, child: Text("Lvl $level", style: GoogleFonts.nunito(fontSize: 18, fontWeight: FontWeight.w900, color: accentOrange))),
           const SizedBox(width: 16),
           Expanded(
             child: Column(
@@ -168,13 +167,7 @@ class _DashboardTabState extends State<DashboardTab> {
                   ],
                 ),
                 const SizedBox(height: 10),
-                LinearProgressIndicator(
-                  value: progressPercent,
-                  backgroundColor: Colors.white.withOpacity(0.3),
-                  valueColor: const AlwaysStoppedAnimation<Color>(Colors.white),
-                  minHeight: 8,
-                  borderRadius: BorderRadius.circular(10),
-                ),
+                LinearProgressIndicator(value: progressPercent, backgroundColor: Colors.white.withOpacity(0.3), valueColor: const AlwaysStoppedAnimation<Color>(Colors.white), minHeight: 8, borderRadius: BorderRadius.circular(10)),
               ],
             ),
           )
@@ -183,31 +176,34 @@ class _DashboardTabState extends State<DashboardTab> {
     );
   }
 
-  Widget _buildStatisticsAndHistory(String uid) {
+  Widget _buildStatisticsAndHistory(String uid, String namaAnak, String childId, bool isFirstChild) {
     return StreamBuilder<QuerySnapshot>(
-      stream: FirebaseFirestore.instance
-          .collection('users')
-          .doc(uid)
-          .collection('history')
-          .orderBy('tanggal', descending: true)
-          .snapshots(),
+      stream: FirebaseFirestore.instance.collection('users').doc(uid).collection('history').orderBy('tanggal', descending: true).snapshots(),
       builder: (context, snapshot) {
-        if (snapshot.connectionState == ConnectionState.waiting) {
-          return Center(child: CircularProgressIndicator(color: primaryBlue));
-        }
+        if (snapshot.connectionState == ConnectionState.waiting) return Center(child: CircularProgressIndicator(color: primaryBlue));
+        if (!snapshot.hasData || snapshot.data!.docs.isEmpty) return _buildPlaceholderStat();
 
-        if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
-          return _buildPlaceholderStat();
-        }
+        var allDocs = snapshot.data!.docs;
+        
+        var docs = allDocs.where((doc) {
+           var data = doc.data() as Map<String, dynamic>;
+           bool matchId = data['child_id'] == childId;
+           bool matchName = data['child_name'] == namaAnak;
+           bool isLegacyData = data['child_id'] == null && data['child_name'] == null;
+           
+           return matchId || matchName || (isLegacyData && isFirstChild);
+        }).toList();
 
-        var docs = snapshot.data!.docs;
+        if (docs.isEmpty) return _buildPlaceholderStat();
+
         int totalKuis = docs.length;
         int totalNilai = 0;
         Map<String, List<int>> skorPerMapel = {};
 
         for (var doc in docs) {
-          int s = (doc['score'] as num).toInt();
-          String m = doc['mapel'] ?? "Umum";
+          var data = doc.data() as Map<String, dynamic>;
+          int s = (data['score'] as num).toInt();
+          String m = data['mapel'] ?? "Umum";
           totalNilai += s;
           if (skorPerMapel.containsKey(m)) {
             skorPerMapel[m]!.add(s);
@@ -221,10 +217,7 @@ class _DashboardTabState extends State<DashboardTab> {
         double rataRataTerendah = 100.0;
         skorPerMapel.forEach((mapel, daftarNilai) {
           double avgMapel = daftarNilai.reduce((a, b) => a + b) / daftarNilai.length;
-          if (avgMapel < rataRataTerendah) {
-            rataRataTerendah = avgMapel;
-            mapelTerlemah = mapel;
-          }
+          if (avgMapel < rataRataTerendah) { rataRataTerendah = avgMapel; mapelTerlemah = mapel; }
         });
 
         var recentDocs = docs.take(3).toList();
@@ -241,7 +234,7 @@ class _DashboardTabState extends State<DashboardTab> {
             ),
             const SizedBox(height: 32),
             if (mapelTerlemah.isNotEmpty) ...[
-              _buildRadarCard(mapelTerlemah, rataRataTerendah.round()), // SUDAH DIPERBAIKI
+              _buildRadarCard(mapelTerlemah, rataRataTerendah.round()), 
               const SizedBox(height: 32),
             ],
             Row(
@@ -249,9 +242,7 @@ class _DashboardTabState extends State<DashboardTab> {
               children: [
                 Text("Riwayat Terakhir", style: GoogleFonts.nunito(fontSize: 18, fontWeight: FontWeight.bold, color: darkBlueText)),
                 GestureDetector(
-                  onTap: () {
-                    Navigator.push(context, MaterialPageRoute(builder: (_) => const HistoryPage()));
-                  },
+                  onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => HistoryPage(childName: namaAnak, childId: childId, isFirstChild: isFirstChild))),
                   child: Text("Lihat Semua", style: GoogleFonts.quicksand(fontWeight: FontWeight.bold, color: accentOrange)),
                 ),
               ],
@@ -269,11 +260,7 @@ class _DashboardTabState extends State<DashboardTab> {
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        color: isDanger ? Colors.red.shade50 : Colors.blue.shade50,
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: isDanger ? Colors.red.shade200 : Colors.blue.shade200, width: 2),
-      ),
+      decoration: BoxDecoration(color: isDanger ? Colors.red.shade50 : Colors.blue.shade50, borderRadius: BorderRadius.circular(20), border: Border.all(color: isDanger ? Colors.red.shade200 : Colors.blue.shade200, width: 2)),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -286,23 +273,13 @@ class _DashboardTabState extends State<DashboardTab> {
           ),
           const SizedBox(height: 12),
           Text(
-            isDanger 
-              ? "Waduh, rata-rata nilai $mapel kamu masih $nilaiAvg nih. Yuk, kita perbanyak latihan di materi ini biar nilainya naik!"
-              : "Hebat! Kamu paling butuh penguatan sedikit lagi di $mapel (Rata-rata: $nilaiAvg). Gas kuis lagi!",
+            isDanger ? "Waduh, rata-rata nilai $mapel kamu masih $nilaiAvg nih. Yuk, kita perbanyak latihan di materi ini biar nilainya naik!" : "Hebat! Kamu paling butuh penguatan sedikit lagi di $mapel (Rata-rata: $nilaiAvg). Gas kuis lagi!",
             style: GoogleFonts.quicksand(fontSize: 15, fontWeight: FontWeight.w600, color: Colors.grey.shade800),
           ),
           const SizedBox(height: 16),
           ElevatedButton(
-            onPressed: () {
-              // NAVIGASI LANGSUNG KE PENGATURAN KUIS MAPEL TERSEBUT
-              Navigator.push(context, MaterialPageRoute(builder: (_) => QuizConfigPage(mapel: mapel)));
-            },
-            style: ElevatedButton.styleFrom(
-              backgroundColor: isDanger ? Colors.redAccent : primaryBlue,
-              foregroundColor: Colors.white,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-              elevation: 0,
-            ),
+            onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => QuizConfigPage(mapel: mapel))),
+            style: ElevatedButton.styleFrom(backgroundColor: isDanger ? Colors.redAccent : primaryBlue, foregroundColor: Colors.white, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)), elevation: 0),
             child: Text("Latihan $mapel Sekarang", style: GoogleFonts.nunito(fontWeight: FontWeight.bold)),
           )
         ],
@@ -314,11 +291,7 @@ class _DashboardTabState extends State<DashboardTab> {
     return Expanded(
       child: Container(
         padding: const EdgeInsets.all(16),
-        decoration: BoxDecoration(
-          color: color.withOpacity(0.1),
-          borderRadius: BorderRadius.circular(20),
-          border: Border.all(color: color.withOpacity(0.3), width: 2),
-        ),
+        decoration: BoxDecoration(color: color.withOpacity(0.1), borderRadius: BorderRadius.circular(20), border: Border.all(color: color.withOpacity(0.3), width: 2)),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -332,7 +305,7 @@ class _DashboardTabState extends State<DashboardTab> {
     );
   }
 
-  Widget _buildHistoryItem(QueryDocumentSnapshot doc) {
+  Widget _buildHistoryItem(DocumentSnapshot doc) {
     Map<String, dynamic> data = doc.data() as Map<String, dynamic>;
     String mapel = data['mapel'] ?? "Kuis";
     int score = data['score'] ?? 0;
@@ -343,20 +316,12 @@ class _DashboardTabState extends State<DashboardTab> {
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
       padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: Colors.grey.shade200),
-        boxShadow: [BoxShadow(color: Colors.grey.shade100, blurRadius: 10, offset: const Offset(0, 4))],
-      ),
+      decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(16), border: Border.all(color: Colors.grey.shade200), boxShadow: [BoxShadow(color: Colors.grey.shade100, blurRadius: 10, offset: const Offset(0, 4))]),
       child: Row(
         children: [
           Container(
             padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(
-              color: isPassed ? Colors.green.shade50 : Colors.red.shade50,
-              shape: BoxShape.circle,
-            ),
+            decoration: BoxDecoration(color: isPassed ? Colors.green.shade50 : Colors.red.shade50, shape: BoxShape.circle),
             child: Icon(isPassed ? Icons.check_circle_rounded : Icons.cancel_rounded, color: isPassed ? Colors.green : Colors.redAccent),
           ),
           const SizedBox(width: 16),
@@ -379,20 +344,12 @@ class _DashboardTabState extends State<DashboardTab> {
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(30),
-      decoration: BoxDecoration(
-        color: Colors.blue.shade50.withOpacity(0.5),
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: primaryBlue.withOpacity(0.1)),
-      ),
+      decoration: BoxDecoration(color: Colors.blue.shade50.withOpacity(0.5), borderRadius: BorderRadius.circular(20), border: Border.all(color: primaryBlue.withOpacity(0.1))),
       child: Column(
         children: [
           Icon(Icons.analytics_outlined, size: 40, color: primaryBlue.withOpacity(0.5)),
           const SizedBox(height: 12),
-          Text(
-            "Belum ada data kuis nih.\nYuk ngerjain kuis biar muncul statistiknya!",
-            textAlign: TextAlign.center,
-            style: GoogleFonts.quicksand(color: Colors.grey.shade600, fontWeight: FontWeight.w600),
-          ),
+          Text("Belum ada data kuis nih.\nYuk ngerjain kuis biar muncul statistiknya!", textAlign: TextAlign.center, style: GoogleFonts.quicksand(color: Colors.grey.shade600, fontWeight: FontWeight.w600)),
         ],
       ),
     );

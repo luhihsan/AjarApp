@@ -24,6 +24,28 @@ class UserService {
     };
   }
 
+  static Future<DocumentSnapshot?> getActiveChild() async {
+    User? user = _auth.currentUser;
+    if (user == null) return null;
+
+    var parentDoc = await _db.collection('users').doc(user.uid).get();
+    String? activeId = (parentDoc.data() as Map<String, dynamic>?)?['active_child_id'];
+
+    // FIX FATAL BUG: Wajib diurutkan berdasarkan waktu daftar
+    var childrenDocs = await _db.collection('users').doc(user.uid).collection('children').orderBy('createdAt').get();
+    if (childrenDocs.docs.isEmpty) return null;
+
+    if (activeId != null) {
+      try {
+        return childrenDocs.docs.firstWhere((doc) => doc.id == activeId);
+      } catch (e) {}
+    }
+
+    String firstId = childrenDocs.docs.first.id;
+    await _db.collection('users').doc(user.uid).update({'active_child_id': firstId});
+    return childrenDocs.docs.first;
+  }
+
   static Future<int> saveQuizResult({
     required String mapel,
     required int score,
@@ -35,13 +57,12 @@ class UserService {
     User? user = _auth.currentUser;
     if (user == null) return 0;
 
-    var childSnapshot = await _db.collection('users').doc(user.uid).collection('children').limit(1).get();
-    if (childSnapshot.docs.isEmpty) return 0;
+    var activeChild = await getActiveChild(); 
+    if (activeChild == null) return 0;
 
-    DocumentReference childRef = childSnapshot.docs.first.reference;
-    var childData = childSnapshot.docs.first.data();
+    DocumentReference childRef = activeChild.reference;
+    var childData = activeChild.data() as Map<String, dynamic>;
 
-    // RUMUS PEMBOBOTAN XP
     int jumlahSoal = questions.length;
     double baseXp = (score / 100.0) * (jumlahSoal * 10); 
 
@@ -64,11 +85,11 @@ class UserService {
       'xp_earned': finalXpEarned,
       'kesulitan': kesulitan,
       'child_name': childName,
+      'child_id': activeChild.id, 
       'tanggal': DateTime.now(),
       'jumlah_soal': jumlahSoal,
     });
 
-    // Update XP Anak
     int xpLama = childData['xp'] ?? 0;
     await childRef.update({
       'xp': xpLama + finalXpEarned,
@@ -82,11 +103,11 @@ class UserService {
     User? user = _auth.currentUser;
     if (user == null) return 0;
 
-    var childSnapshot = await _db.collection('users').doc(user.uid).collection('children').limit(1).get();
-    if (childSnapshot.docs.isEmpty) return 0;
+    var activeChild = await getActiveChild(); 
+    if (activeChild == null) return 0;
 
-    var childRef = childSnapshot.docs.first.reference;
-    var data = childSnapshot.docs.first.data();
+    var childRef = activeChild.reference;
+    var data = activeChild.data() as Map<String, dynamic>;
 
     DateTime now = DateTime.now();
     DateTime? lastLogin = (data['last_login'] as Timestamp?)?.toDate();

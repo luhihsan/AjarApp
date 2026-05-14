@@ -12,7 +12,7 @@ class QuizPlayPage extends StatefulWidget {
   final int waktuMenit;
   final String mapel;      
   final String kesulitan;
-  final String childName; // TAMBAHAN: Menerima nama anak
+  final String childName;
 
   const QuizPlayPage({
     super.key,
@@ -20,7 +20,7 @@ class QuizPlayPage extends StatefulWidget {
     required this.waktuMenit,
     required this.mapel,     
     required this.kesulitan,
-    required this.childName, // TAMBAHAN
+    required this.childName,
   });
 
   @override
@@ -126,14 +126,13 @@ class _QuizPlayPageState extends State<QuizPlayPage> {
       }
       int finalScore = (totalEarned / widget.questions.length).round();
 
-      // TAMBAHAN: Menyertakan childName saat save
       int xpYangDidapat = await UserService.saveQuizResult(
         mapel: widget.mapel,
         score: finalScore,
         questions: widget.questions,
         kesulitan: widget.kesulitan,
         waktuMenit: widget.waktuMenit,
-        childName: widget.childName, // TAMBAHAN
+        childName: widget.childName, 
       );
 
       if (context.mounted) Navigator.pop(context);
