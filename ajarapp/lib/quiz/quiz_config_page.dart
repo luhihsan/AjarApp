@@ -29,6 +29,7 @@ class _QuizConfigPageState extends State<QuizConfigPage> {
   // State Data Anak
   String _kelasAnak = "";
   String _semesterAnak = "";
+  String _namaAnak = "Anak"; // TAMBAHAN: Untuk menyimpan nama anak
   bool _isLoadingData = true;
 
   // State Agama
@@ -51,6 +52,7 @@ class _QuizConfigPageState extends State<QuizConfigPage> {
         setState(() {
           _kelasAnak = "Umum";
           _semesterAnak = "Umum";
+          _namaAnak = "Anak";
           _isLoadingData = false;
         });
         return;
@@ -68,6 +70,7 @@ class _QuizConfigPageState extends State<QuizConfigPage> {
       if (childDocs.docs.isNotEmpty) {
         var data = childDocs.docs.first.data();
         setState(() {
+          _namaAnak = data['nama_panggilan'] ?? "Anak"; // TAMBAHAN: Ambil nama panggilan anak
           _kelasAnak = data['kelas']?.toString() ?? "Umum";
           _semesterAnak = data['semester']?.toString() ?? "Umum";
           _isLoadingData = false;
@@ -76,6 +79,7 @@ class _QuizConfigPageState extends State<QuizConfigPage> {
         setState(() {
           _kelasAnak = "Umum";
           _semesterAnak = "Umum";
+          _namaAnak = "Anak";
           _isLoadingData = false;
         });
       }
@@ -83,6 +87,7 @@ class _QuizConfigPageState extends State<QuizConfigPage> {
       setState(() {
         _kelasAnak = "Umum";
         _semesterAnak = "Umum";
+        _namaAnak = "Anak";
         _isLoadingData = false;
       });
     }
@@ -166,7 +171,7 @@ class _QuizConfigPageState extends State<QuizConfigPage> {
               const SizedBox(height: 24),
             ],
 
-            // TAMBAHAN: Pilihan Format Kuis (MCQ / Esai / Campuran)
+            // Pilihan Format Kuis (MCQ / Esai / Campuran)
             Text("Format Kuis", style: GoogleFonts.nunito(fontSize: 18, fontWeight: FontWeight.bold, color: darkBlueText)),
             const SizedBox(height: 12),
             Row(
@@ -273,7 +278,7 @@ class _QuizConfigPageState extends State<QuizConfigPage> {
                     kesulitan: _kesulitan,
                     kelas: _kelasAnak,
                     semester: _semesterAnak,
-                    jenisSoal: _jenisSoal, // TAMBAHAN PENGIRIMAN PARAMETER
+                    jenisSoal: _jenisSoal, 
                     agama: widget.mapel == "Pendidikan Agama dan Budi Pekerti" ? _agamaPilihan : null,
                   );
 
@@ -291,6 +296,7 @@ class _QuizConfigPageState extends State<QuizConfigPage> {
                         waktuMenit: _waktuMenit,
                         mapel: widget.mapel, 
                         kesulitan: _kesulitan, 
+                        childName: _namaAnak, // TAMBAHAN: Kirim nama anak ke halaman kuis
                       ))
                     );
                   }
@@ -345,7 +351,6 @@ class _QuizConfigPageState extends State<QuizConfigPage> {
     );
   }
 
-  // TAMBAHAN: Helper Widget untuk Chip Format Kuis
   Widget _buildFormatChip(String label, Color color) {
     bool isSelected = _jenisSoal == label;
     return Expanded(

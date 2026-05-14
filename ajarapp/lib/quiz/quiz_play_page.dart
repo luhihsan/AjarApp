@@ -12,6 +12,7 @@ class QuizPlayPage extends StatefulWidget {
   final int waktuMenit;
   final String mapel;      
   final String kesulitan;
+  final String childName; // TAMBAHAN: Menerima nama anak
 
   const QuizPlayPage({
     super.key,
@@ -19,6 +20,7 @@ class QuizPlayPage extends StatefulWidget {
     required this.waktuMenit,
     required this.mapel,     
     required this.kesulitan,
+    required this.childName, // TAMBAHAN
   });
 
   @override
@@ -124,12 +126,14 @@ class _QuizPlayPageState extends State<QuizPlayPage> {
       }
       int finalScore = (totalEarned / widget.questions.length).round();
 
+      // TAMBAHAN: Menyertakan childName saat save
       int xpYangDidapat = await UserService.saveQuizResult(
         mapel: widget.mapel,
         score: finalScore,
         questions: widget.questions,
         kesulitan: widget.kesulitan,
         waktuMenit: widget.waktuMenit,
+        childName: widget.childName, // TAMBAHAN
       );
 
       if (context.mounted) Navigator.pop(context);
@@ -144,20 +148,6 @@ class _QuizPlayPageState extends State<QuizPlayPage> {
                       correctAnswers: countBenar,
                       questions: widget.questions,
                       xpEarned: xpYangDidapat, 
-                    )));
-      }
-      if (context.mounted) Navigator.pop(context);
-
-      if (context.mounted) {
-        Navigator.pushReplacement(
-            context,
-            MaterialPageRoute(
-                builder: (_) => QuizResultPage(
-                      score: finalScore,
-                      totalQuestions: widget.questions.length,
-                      correctAnswers: countBenar,
-                      questions: widget.questions,
-                      xpEarned: xpYangDidapat,
                     )));
       }
     } catch (e) {
@@ -281,7 +271,6 @@ class _QuizPlayPageState extends State<QuizPlayPage> {
                         ),
                         const SizedBox(height: 32),
 
-                        // TAMBAHAN LOGIC: TAMPILKAN OPSI JIKA MCQ, TEXTFIELD JIKA ESAI
                         if (currentQ.type == 'mcq')
                           ListView.builder(
                             shrinkWrap: true,
