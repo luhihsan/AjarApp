@@ -2,21 +2,18 @@ import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import 'auth/landing_page.dart';
+import 'auth/onboarding_page.dart'; // IMPORT ONBOARDING
 import 'main_screen/main_screen.dart';
-// import 'firebase_options.dart'; // Buka komen ini kalau lo pakai firebase_options.dart dari flutterfire configure
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   
-  // Load API Key Gemini
   await dotenv.load(fileName: ".env");
   
-  // Inisialisasi Firebase
-  await Firebase.initializeApp(
-    // options: DefaultFirebaseOptions.currentPlatform, // Buka komen ini kalau pakai firebase_options
-  );
+  await Firebase.initializeApp();
   
   runApp(const MyApp());
 }
@@ -28,44 +25,101 @@ class MyApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp(
       title: 'Ajar App',
-      debugShowCheckedModeBanner: false, // Ngilangin pita "DEBUG" di pojok kanan atas
+      debugShowCheckedModeBanner: false,
       theme: ThemeData(
         primaryColor: const Color(0xFF67BEE0),
         scaffoldBackgroundColor: const Color(0xFFFDFDFD),
       ),
-      // Alih-alih langsung ke LandingPage, kita lempar ke "Satpam" (AuthWrapper) dulu
-      home: const AuthWrapper(), 
+      // Arahkan ke Splash/Decider Screen
+      home: const InitialRouteDecider(), 
     );
   }
 }
 
-// --- KELAS SATPAM (AUTH WRAPPER) ---
+// --- KELAS PENENTU RUTE (Splash Screen & Decider) ---
+class InitialRouteDecider extends StatefulWidget {
+  const InitialRouteDecider({super.key});
+
+  @override
+  State<InitialRouteDecider> createState() => _InitialRouteDeciderState();
+}
+
+class _InitialRouteDeciderState extends State<InitialRouteDecider> {
+  @override
+  void initState() {
+    super.initState();
+    _checkInitialRoute();
+  }
+
+  Future<void> _checkInitialRoute() async {
+    // Beri sedikit jeda agar terasa seperti Splash Screen
+    await Future.delayed(const Duration(seconds: 2));
+
+    if (!mounted) return;
+
+    // Cek apakah onboarding sudah dilihat
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    bool hasSeenOnboarding = prefs.getBool('has_seen_onboarding') ?? false;
+
+    if (!hasSeenOnboarding) {
+      // Jika belum, lempar ke Onboarding
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(builder: (_) => const OnboardingPage()),
+      );
+    } else {
+      // Jika sudah, lempar ke AuthWrapper (Satpam Login)
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(builder: (_) => const AuthWrapper()),
+      );
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    // Ini berfungsi sebagai SPLASH SCREEN sederhana
+    return Scaffold(
+      backgroundColor: const Color(0xFFFDFDFD),
+      body: Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            // Ganti logo sesuai kebutuhanmu
+            Image.asset(
+              'lib/assets/logo.png',
+              width: 150,
+              errorBuilder: (context, error, stackTrace) => const Icon(Icons.school_rounded, size: 100, color: Color(0xFF67BEE0)),
+            ),
+            const SizedBox(height: 24),
+            const CircularProgressIndicator(color: Color(0xFFFF8E00)),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
 class AuthWrapper extends StatelessWidget {
   const AuthWrapper({super.key});
 
   @override
   Widget build(BuildContext context) {
-    // StreamBuilder ini akan selalu memantau status login user secara Real-Time
     return StreamBuilder<User?>(
       stream: FirebaseAuth.instance.authStateChanges(),
       builder: (context, snapshot) {
-        // 1. Kalau lagi proses ngecek (loading)
         if (snapshot.connectionState == ConnectionState.waiting) {
           return const Scaffold(
             backgroundColor: Color(0xFFFDFDFD),
-            body: Center(
-              child: CircularProgressIndicator(color: Color(0xFF67BEE0)),
-            ),
+            body: Center(child: CircularProgressIndicator(color: Color(0xFF67BEE0))),
           );
         }
 
-        // 2. Kalau terdeteksi ADA data user (Berarti token sesi masih aktif/valid)
         if (snapshot.hasData && snapshot.data != null) {
-          return const MainScreen(); // Langsung terobos ke Dashboard/Beranda
+          return const MainScreen(); 
         }
 
-        // 3. Kalau TIDAK ADA user (Belum login / Sudah logout)
-        return const LandingPage(); // Lempar ke halaman awal untuk login
+        return const LandingPage(); 
       },
     );
   }

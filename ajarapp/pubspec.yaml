@@ -44,6 +44,7 @@ dependencies:
   flutter_dotenv: ^6.0.1
   pdf: ^3.11.3
   printing: ^5.14.3
+  shared_preferences: ^2.5.3
 
 dev_dependencies:
   flutter_test:
@@ -72,6 +73,9 @@ flutter:
     - lib/assets/parent_owl.png
     - lib/assets/baby_owl.png
     - lib/assets/logo_google.png
+    - lib/assets/onboard_1.png
+    - lib/assets/onboard_2.png
+    - lib/assets/onboard_3.png
     - .env
 
   # To add assets to your application, add an assets section, like this:
