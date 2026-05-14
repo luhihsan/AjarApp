@@ -26,7 +26,6 @@ class GeminiService {
       apiKey: _apiKey,
     );
 
-    // 1. INSTRUKSI TIPE SOAL
     String instruksiTipe = "";
     if (jenisSoal == "Pilihan Ganda") {
       instruksiTipe = "Buatkan SEMUA soal dalam bentuk Pilihan Ganda (type: 'mcq'). Wajib isi array options.";
@@ -36,7 +35,6 @@ class GeminiService {
       instruksiTipe = "Buatkan soal CAMPURAN (sebagian Pilihan Ganda type: 'mcq', dan sebagian Esai type: 'essay').";
     }
 
-    // 2. CONTOH JSON DINAMIS (Ini kunci agar AI tidak bingung)
     String contohJson = "";
     if (jenisSoal == "Pilihan Ganda") {
       contohJson = '''
@@ -110,26 +108,24 @@ class GeminiService {
     }
   }
 
-    static Future<String> generateEvaluation({
+  static Future<String> generateEvaluation({
     required List<QuestionModel> questions,
     required int score,
-    }) async {
-      if (_apiKey.isEmpty) {
-        return "Evaluasi tidak tersedia (API Key kosong).";
-      }
+  }) async {
+    if (_apiKey.isEmpty) {
+      return "Evaluasi tidak tersedia (API Key kosong).";
+    }
 
     final model = GenerativeModel(
       model: 'gemini-3.1-flash-lite', 
       apiKey: _apiKey,
     );
 
-    // 1. Rangkum data jawaban untuk di-audit oleh AI
     String hasilKuis = questions.map((q) {
       bool isCorrect = q.userAnswer == q.correctAnswer;
       return "- Soal: ${q.question}\n  Status: ${isCorrect ? 'Benar' : 'Salah'}";
     }).join("\n");
 
-    // 2. Prompt Engineering Khusus Evaluasi
     final prompt = '''
       Kamu adalah seorang guru SD yang asik, ramah, dan sangat suportif.
       Seorang murid baru saja menyelesaikan kuis dengan nilai $score dari 100.
@@ -156,9 +152,25 @@ class GeminiService {
     if (_apiKey.isEmpty) throw Exception("API Key tidak ditemukan.");
     final model = GenerativeModel(model: 'gemini-3.1-flash-lite', apiKey: _apiKey);
 
+    List<QuestionModel> essayQuestions = [];
+
+    for (var q in questions) {
+      if (q.type == 'mcq') {
+        if (q.userAnswer == q.correctAnswer) {
+          q.earnedScore = 100;
+          q.aiFeedback = "Tepat sekali!";
+        } else {
+          q.earnedScore = 0;
+          q.aiFeedback = "Kunci yang benar adalah: ${q.correctAnswer}";
+        }
+      } else {
+        essayQuestions.add(q);
+      }
+    }
+    if (essayQuestions.isEmpty) return;
     String dataKuis = "";
-    for (int i = 0; i < questions.length; i++) {
-      var q = questions[i];
+    for (int i = 0; i < essayQuestions.length; i++) {
+      var q = essayQuestions[i];
       dataKuis += "Soal ${i + 1}:\n";
       dataKuis += "Tipe: ${q.type}\n";
       dataKuis += "Pertanyaan: ${q.question}\n";
@@ -198,11 +210,10 @@ class GeminiService {
       final cleanedText = responseText.replaceAll('```json', '').replaceAll('```', '').trim();
       final List<dynamic> jsonList = jsonDecode(cleanedText);
 
-      // 3. Masukkan hasil nilai dan feedback AI kembali ke model
-      for (int i = 0; i < questions.length; i++) {
+      for (int i = 0; i < essayQuestions.length; i++) {
         if (i < jsonList.length) {
-          questions[i].earnedScore = jsonList[i]['score'] ?? 0;
-          questions[i].aiFeedback = jsonList[i]['feedback'] ?? "";
+          essayQuestions[i].earnedScore = jsonList[i]['score'] ?? 0;
+          essayQuestions[i].aiFeedback = jsonList[i]['feedback'] ?? "";
         }
       }
     } catch (e) {
