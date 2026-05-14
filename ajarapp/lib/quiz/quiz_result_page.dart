@@ -1,14 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
-import '../models/question_model.dart'; // Import modelnya
-import 'quiz_review_page.dart'; // Import halaman review yang baru
+import '../models/question_model.dart';
+import 'quiz_review_page.dart';
 
 class QuizResultPage extends StatelessWidget {
   final int score;
   final int totalQuestions;
   final int correctAnswers;
-  
   final List<QuestionModel> questions; 
 
   const QuizResultPage({
@@ -16,14 +15,13 @@ class QuizResultPage extends StatelessWidget {
     required this.score, 
     required this.totalQuestions, 
     required this.correctAnswers,
-    required this.questions, 
+    required this.questions,
   });
 
   @override
   Widget build(BuildContext context) {
     bool isPassed = score >= 70;
     
-    // Palet warna biar gampang dipanggil
     final Color primaryBlue = const Color(0xFF67BEE0);
     final Color accentOrange = const Color(0xFFFF8E00);
     final Color darkBlueText = const Color(0xFF2C6C85);
@@ -35,7 +33,7 @@ class QuizResultPage extends StatelessWidget {
           padding: const EdgeInsets.all(24.0),
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
-            crossAxisAlignment: CrossAxisAlignment.stretch, // Biar tombolnya otomatis full width
+            crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               Icon(
                 isPassed ? Icons.emoji_events_rounded : Icons.sentiment_dissatisfied_rounded, 
@@ -57,6 +55,7 @@ class QuizResultPage extends StatelessWidget {
               ),
               const SizedBox(height: 40),
 
+              // KOTAK NILAI
               Container(
                 padding: const EdgeInsets.symmetric(vertical: 30, horizontal: 50),
                 decoration: BoxDecoration(
@@ -71,9 +70,29 @@ class QuizResultPage extends StatelessWidget {
                   ],
                 ),
               ),
-              const SizedBox(height: 50),
+              const SizedBox(height: 16),
 
-              // 3. TOMBOL BARU: LIHAT PEMBAHASAN & EVALUASI AI
+              // TAMBAHAN: BADGE XP EARNED
+              Center(
+                child: Container(
+                  padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 24),
+                  decoration: BoxDecoration(
+                    color: Colors.orange.shade50,
+                    borderRadius: BorderRadius.circular(20),
+                    border: Border.all(color: accentOrange.withOpacity(0.5), width: 2),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const Text("🔥", style: TextStyle(fontSize: 24)),
+                      const SizedBox(width: 8),
+                      Text("+$score XP", style: GoogleFonts.nunito(fontSize: 20, fontWeight: FontWeight.w900, color: accentOrange)),
+                    ],
+                  ),
+                ),
+              ),
+              const SizedBox(height: 40),
+
               ElevatedButton(
                 onPressed: () {
                   Navigator.push(
@@ -97,10 +116,8 @@ class QuizResultPage extends StatelessWidget {
               ),
               const SizedBox(height: 16),
 
-              // TOMBOL LAMA: KEMBALI KE BERANDA
               ElevatedButton(
                 onPressed: () {
-                  // Kembali ke root (Dashboard / Main Screen)
                   Navigator.of(context).popUntil((route) => route.isFirst);
                 },
                 style: ElevatedButton.styleFrom(

@@ -5,6 +5,7 @@ import 'package:google_fonts/google_fonts.dart';
 import '../models/question_model.dart';
 import 'quiz_result_page.dart';
 import '../services/gemini_service.dart';
+import '../services/user_service.dart';
 
 class QuizPlayPage extends StatefulWidget {
   final List<QuestionModel> questions;
@@ -74,7 +75,6 @@ class _QuizPlayPageState extends State<QuizPlayPage> {
         _score++;
       }
     }
-    // Note: Untuk soal essay, koreksi skor dilakukan nanti oleh AI di Review Page
 
     if (_currentIndex < widget.questions.length - 1) {
       setState(() {
@@ -114,17 +114,20 @@ class _QuizPlayPageState extends State<QuizPlayPage> {
 
       int totalEarned = 0;
       int countBenar = 0;
-      
       for (var q in widget.questions) {
         totalEarned += q.earnedScore;
-        if (q.earnedScore >= 70) {
-          countBenar++; 
-        }
+        if (q.earnedScore >= 70) countBenar++;
       }
-      
       int finalScore = (totalEarned / widget.questions.length).round();
 
-      if (context.mounted) Navigator.pop(context); 
+      await UserService.saveQuizResult(
+        mapel: "Latihan", 
+        score: finalScore,
+        questions: widget.questions,
+      );
+      // ------------------------------------
+
+      if (context.mounted) Navigator.pop(context);
 
       if (context.mounted) {
         Navigator.pushReplacement(
